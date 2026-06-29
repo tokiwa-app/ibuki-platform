@@ -1,4 +1,5 @@
 // app/page.js
+'use client';
 import Head from 'next/head';
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
