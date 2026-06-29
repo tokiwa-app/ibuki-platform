@@ -7,25 +7,43 @@ export default function MastersPage() {
 
   const masters = [
     {
-      title: '顧客マスター',
-      description: 'ERPNextのCustomerを確認します',
-      path: '/masters/customer',
+      title: 'Customer',
+      description: 'ERPNext Customer',
+      path: '/masters/Customer',
     },
     {
-      title: '商品マスター',
-      description: 'ERPNextのItemを確認します',
-      path: '/masters/item',
+      title: 'Item',
+      description: 'ERPNext Item',
+      path: '/masters/Item',
     },
     {
-      title: '倉庫マスター',
-      description: 'ERPNextのWarehouseを確認します',
-      path: '/masters/warehouse',
+      title: 'Warehouse',
+      description: 'ERPNext Warehouse',
+      path: '/masters/Warehouse',
+    },
+    {
+      title: 'Supplier',
+      description: 'ERPNext Supplier',
+      path: '/masters/Supplier',
+    },
+    {
+      title: 'Address',
+      description: 'ERPNext Address',
+      path: '/masters/Address',
+    },
+    {
+      title: 'Contact',
+      description: 'ERPNext Contact',
+      path: '/masters/Contact',
     },
   ];
 
   return (
     <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif' }}>
-      <button onClick={() => router.push('/dashboard')} style={{ marginBottom: 24 }}>
+      <button
+        onClick={() => router.push('/dashboard')}
+        style={{ marginBottom: 24 }}
+      >
         ← ダッシュボードへ戻る
       </button>
 
@@ -34,7 +52,7 @@ export default function MastersPage() {
           マスター管理
         </h1>
         <p style={{ marginTop: 8, color: '#666' }}>
-          Platform共通マスターを管理します。
+          ERPNext DocType
         </p>
       </header>
 
