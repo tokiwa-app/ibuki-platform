@@ -8,7 +8,7 @@ export default function MastersPage() {
   const masters = [
     {
       title: 'Customer',
-      description: 'ERPNext Customer',
+      description: 'ERPNext customer',
       path: '/masters/Customer',
     },
     {
