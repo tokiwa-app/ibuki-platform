@@ -152,7 +152,7 @@ export default function CustomerDetailPage() {
   return (
     <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif' }}>
       <button
-        onClick={() => router.push('/masters/Customer')}
+        onClick={() => router.push('/masters/customer')}
         style={{ marginBottom: 24 }}
       >
         ← Customer一覧へ戻る
