@@ -15,7 +15,7 @@ export default function CustomerPage() {
       title="Customer"
       endpoint="/api/erpnext/customer"
       columns={columns}
-      editPath={(row) => `/masters/Customer/${row.name}`}
+      editPath={(row) => `/masters/customer/${row.name}`}
     />
   );
 }
