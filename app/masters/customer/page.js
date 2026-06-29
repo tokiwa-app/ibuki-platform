@@ -13,7 +13,7 @@ export default function CustomerPage() {
   return (
     <DataGrid
       title="Customer"
-      endpoint="/api/erpnext/Customer"
+      endpoint="/api/erpnext/customer"
       columns={columns}
       editPath={(row) => `/masters/Customer/${row.name}`}
     />
