@@ -7,35 +7,11 @@ export default function MastersPage() {
 
   const masters = [
     {
-      title: 'Customer',
+      title: '顧客',
       description: 'ERPNext customer',
-      path: '/masters/Customer',
+      path: '/masters/customer',
     },
-    {
-      title: 'Item',
-      description: 'ERPNext Item',
-      path: '/masters/Item',
-    },
-    {
-      title: 'Warehouse',
-      description: 'ERPNext Warehouse',
-      path: '/masters/Warehouse',
-    },
-    {
-      title: 'Supplier',
-      description: 'ERPNext Supplier',
-      path: '/masters/Supplier',
-    },
-    {
-      title: 'Address',
-      description: 'ERPNext Address',
-      path: '/masters/Address',
-    },
-    {
-      title: 'Contact',
-      description: 'ERPNext Contact',
-      path: '/masters/Contact',
-    },
+
   ];
 
   return (
