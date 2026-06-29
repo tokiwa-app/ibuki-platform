@@ -1,6 +1,6 @@
 'use client';
 
-import DataGrid from '../../../components/platform/grid/DataGrid';
+import DataGrid from '../../../../components/platform/grid/DataGrid';
 
 const columns = [
   { field: 'name', headerName: '顧客コード', width: 140 },
