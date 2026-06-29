@@ -3,21 +3,27 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-export default function PartnerDetailPage() {
+export default function CustomerDetailPage() {
   const router = useRouter();
   const params = useParams();
   const code = params?.code;
 
-  const [partner, setPartner] = useState(null);
   const [form, setForm] = useState({
     name: '',
     customer_name: '',
+    customer_type: '',
     customer_group: '',
     territory: '',
-    partner_type: '荷主',
-    is_own_company: false,
-    remarks: '',
+    tax_id: '',
+    tax_category: '',
+    billing_currency: '',
+    default_price_list: '',
+    payment_terms: '',
+    website: '',
+    disabled: 0,
+    is_frozen: 0,
   });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -28,17 +34,20 @@ export default function PartnerDetailPage() {
       const res = await fetch(`/api/erpnext/customer/${code}`);
       const data = await res.json();
 
-      const p = data?.data || data;
-      setPartner(p);
-
       setForm({
-        name: p?.name || '',
-        customer_name: p?.customer_name || '',
-        customer_group: p?.customer_group || '',
-        territory: p?.territory || '',
-        partner_type: p?.partner_type || '荷主',
-        is_own_company: !!p?.is_own_company,
-        remarks: p?.remarks || '',
+        name: data?.name || '',
+        customer_name: data?.customer_name || '',
+        customer_type: data?.customer_type || '',
+        customer_group: data?.customer_group || '',
+        territory: data?.territory || '',
+        tax_id: data?.tax_id || '',
+        tax_category: data?.tax_category || '',
+        billing_currency: data?.billing_currency || '',
+        default_price_list: data?.default_price_list || '',
+        payment_terms: data?.payment_terms || '',
+        website: data?.website || '',
+        disabled: data?.disabled || 0,
+        is_frozen: data?.is_frozen || 0,
       });
 
       setLoading(false);
@@ -76,22 +85,23 @@ export default function PartnerDetailPage() {
 
   return (
     <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif' }}>
-      <button onClick={() => router.push('/masters/customer')} style={{ marginBottom: 24 }}>
-        ← 取引先一覧へ戻る
+      <button
+        onClick={() => router.push('/masters/Customer')}
+        style={{ marginBottom: 24 }}
+      >
+        ← Customer一覧へ戻る
       </button>
 
-      <h1 style={{ fontSize: 28, marginBottom: 24 }}>
-        取引先詳細
-      </h1>
+      <h1 style={{ fontSize: 28, marginBottom: 24 }}>Customer</h1>
 
       <div style={{ display: 'grid', gap: 16, maxWidth: 720 }}>
         <label>
-          <div>取引先コード</div>
+          <div>Customer</div>
           <input value={form.name} disabled style={inputStyle} />
         </label>
 
         <label>
-          <div>取引先名</div>
+          <div>Customer Name</div>
           <input
             value={form.customer_name}
             onChange={(e) => updateField('customer_name', e.target.value)}
@@ -100,22 +110,25 @@ export default function PartnerDetailPage() {
         </label>
 
         <label>
-          <div>取引先種別</div>
-          <select
-            value={form.partner_type}
-            onChange={(e) => updateField('partner_type', e.target.value)}
+          <div>Customer Type</div>
+          <input
+            value={form.customer_type}
+            onChange={(e) => updateField('customer_type', e.target.value)}
             style={inputStyle}
-          >
-            <option value="自社">自社</option>
-            <option value="荷主">荷主</option>
-            <option value="協力会社">協力会社</option>
-            <option value="運送会社">運送会社</option>
-            <option value="仕入先">仕入先</option>
-          </select>
+          />
         </label>
 
         <label>
-          <div>地域</div>
+          <div>Customer Group</div>
+          <input
+            value={form.customer_group}
+            onChange={(e) => updateField('customer_group', e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          <div>Territory</div>
           <input
             value={form.territory}
             onChange={(e) => updateField('territory', e.target.value)}
@@ -124,37 +137,80 @@ export default function PartnerDetailPage() {
         </label>
 
         <label>
+          <div>Tax ID</div>
           <input
-            type="checkbox"
-            checked={form.is_own_company}
-            onChange={(e) => updateField('is_own_company', e.target.checked)}
-          />
-          自社として扱う
-        </label>
-
-        <label>
-          <div>備考</div>
-          <textarea
-            value={form.remarks}
-            onChange={(e) => updateField('remarks', e.target.value)}
-            rows={4}
+            value={form.tax_id}
+            onChange={(e) => updateField('tax_id', e.target.value)}
             style={inputStyle}
           />
         </label>
 
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={save} disabled={saving} style={buttonStyle}>
-            {saving ? '保存中...' : '保存'}
-          </button>
+        <label>
+          <div>Tax Category</div>
+          <input
+            value={form.tax_category}
+            onChange={(e) => updateField('tax_category', e.target.value)}
+            style={inputStyle}
+          />
+        </label>
 
-          <button onClick={() => router.push(`/masters/partner/${code}/warehouses`)}>
-            利用倉庫
-          </button>
+        <label>
+          <div>Billing Currency</div>
+          <input
+            value={form.billing_currency}
+            onChange={(e) => updateField('billing_currency', e.target.value)}
+            style={inputStyle}
+          />
+        </label>
 
-          <button onClick={() => router.push(`/masters/partner/${code}/items`)}>
-            商品マスター
-          </button>
-        </div>
+        <label>
+          <div>Price List</div>
+          <input
+            value={form.default_price_list}
+            onChange={(e) => updateField('default_price_list', e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          <div>Payment Terms Template</div>
+          <input
+            value={form.payment_terms}
+            onChange={(e) => updateField('payment_terms', e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          <div>Website</div>
+          <input
+            value={form.website}
+            onChange={(e) => updateField('website', e.target.value)}
+            style={inputStyle}
+          />
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={!!form.disabled}
+            onChange={(e) => updateField('disabled', e.target.checked ? 1 : 0)}
+          />
+          Disabled
+        </label>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={!!form.is_frozen}
+            onChange={(e) => updateField('is_frozen', e.target.checked ? 1 : 0)}
+          />
+          Is Frozen
+        </label>
+
+        <button onClick={save} disabled={saving} style={buttonStyle}>
+          {saving ? '保存中...' : '保存'}
+        </button>
       </div>
     </main>
   );
