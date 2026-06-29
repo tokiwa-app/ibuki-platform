@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import DataGrid from '../../../components/platform/grid/DataGrid';
+import SearchBar from '../../../components/platform/search/SearchBar';
+import TextSearch from '../../../components/platform/search/TextSearch';
 
 const columns = [
   { field: 'name', headerName: 'Customer', width: 140 },
@@ -12,27 +14,32 @@ const columns = [
 
 export default function CustomerPage() {
   const [keyword, setKeyword] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+
+  function handleSearch() {
+    setSearchKeyword(keyword);
+  }
+
+  function handleClear() {
+    setKeyword('');
+    setSearchKeyword('');
+  }
 
   return (
     <main style={{ padding: 32 }}>
       <h1>Customer</h1>
 
-      <div style={{ marginBottom: 16 }}>
-        <input
+      <SearchBar onSearch={handleSearch} onClear={handleClear}>
+        <TextSearch
+          label="Customer検索"
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Customerコード・顧客名"
-          style={{
-            width: 300,
-            padding: 8,
-            border: '1px solid #ccc',
-            borderRadius: 6,
-          }}
+          onChange={setKeyword}
+          placeholder="Customerコード・Customer Name"
         />
-      </div>
+      </SearchBar>
 
       <DataGrid
-        endpoint={`/api/erpnext/customer?q=${encodeURIComponent(keyword)}`}
+        endpoint={`/api/erpnext/customer?q=${encodeURIComponent(searchKeyword)}`}
         columns={columns}
         editPath={(row) => `/masters/customer/${row.name}`}
       />
