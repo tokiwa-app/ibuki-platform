@@ -1,4 +1,4 @@
-// pages/index.js
+// app/page.js
 import Head from 'next/head';
 import { useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
@@ -28,7 +28,7 @@ export default function Home() {
     setMsg('');
 
     const { error } = await supabase.auth.resetPasswordForEmail(loginId, {
-      redirectTo: 'https://ibuki-erp-system.vercel.app/reset-password',
+      redirectTo: 'https://ibuki-wms.vercel.app/reset-password',
     });
 
     setBusy(false);
@@ -113,7 +113,7 @@ export default function Home() {
           href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@500;600&display=swap"
           rel="stylesheet"
         />
-        <title>Ibuki ERP</title>
+        <title>Ibuki WMS</title>
       </Head>
 
       <h1
@@ -140,13 +140,13 @@ export default function Home() {
             transform: 'translateY(-3px)',
           }}
         >
-          ERP
+          WMS
         </span>
       </h1>
 
       <img
         src="/ibuki-header.png"
-        alt="ibuki erp"
+        alt="ibuki wms"
         style={{ width: '100%', maxWidth: 420, margin: '0 auto 32px', display: 'block' }}
       />
 
