@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import DataGrid from '../../../components/platform/grid/DataGrid';
 
 const columns = [
@@ -10,12 +11,31 @@ const columns = [
 ];
 
 export default function CustomerPage() {
+  const [keyword, setKeyword] = useState('');
+
   return (
-    <DataGrid
-      title="Customer"
-      endpoint="/api/erpnext/customer"
-      columns={columns}
-      editPath={(row) => `/masters/customer/${row.name}`}
-    />
+    <main style={{ padding: 32 }}>
+      <h1>Customer</h1>
+
+      <div style={{ marginBottom: 16 }}>
+        <input
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="Customerコード・顧客名"
+          style={{
+            width: 300,
+            padding: 8,
+            border: '1px solid #ccc',
+            borderRadius: 6,
+          }}
+        />
+      </div>
+
+      <DataGrid
+        endpoint={`/api/erpnext/customer?q=${encodeURIComponent(keyword)}`}
+        columns={columns}
+        editPath={(row) => `/masters/customer/${row.name}`}
+      />
+    </main>
   );
 }
