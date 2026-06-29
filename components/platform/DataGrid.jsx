@@ -14,6 +14,7 @@ export default function DataGrid({ title, endpoint, columns }) {
       const data = await res.json();
       setRows(Array.isArray(data) ? data : data.data || []);
     }
+
     load();
   }, [endpoint]);
 
