@@ -2,18 +2,41 @@ import { erpnextRequest } from '../../../../../lib/erpnextClient';
 
 export const dynamic = 'force-dynamic';
 
-async function warehouseExists(name) {
+const COMPANY_ABBR = 'T';
+
+function getWarehouseId(warehouseName) {
+  return `${warehouseName} - ${COMPANY_ABBR}`;
+}
+
+async function warehouseExists(warehouseId) {
   try {
-    await erpnextRequest(`/api/resource/Warehouse/${encodeURIComponent(name)}`);
+    await erpnextRequest(
+      `/api/resource/Warehouse/${encodeURIComponent(warehouseId)}`
+    );
     return true;
   } catch {
     return false;
   }
 }
 
-async function createWarehouse({ name, warehouse_name, parent_warehouse, is_group }) {
+async function createWarehouseIfMissing({
+  warehouse_name,
+  parent_warehouse,
+  is_group,
+}) {
+  const warehouseId = getWarehouseId(warehouse_name);
+
+  const exists = await warehouseExists(warehouseId);
+
+  if (exists) {
+    return {
+      name: warehouseId,
+      created: false,
+    };
+  }
+
   const body = {
-    warehouse_name: warehouse_name || name,
+    warehouse_name,
     is_group,
   };
 
@@ -21,10 +44,15 @@ async function createWarehouse({ name, warehouse_name, parent_warehouse, is_grou
     body.parent_warehouse = parent_warehouse;
   }
 
-  return erpnextRequest('/api/resource/Warehouse', {
+  const result = await erpnextRequest('/api/resource/Warehouse', {
     method: 'POST',
     body: JSON.stringify(body),
   });
+
+  return {
+    name: result?.data?.name || warehouseId,
+    created: true,
+  };
 }
 
 export async function POST(request) {
@@ -40,64 +68,56 @@ export async function POST(request) {
 
     const rootCode = String(customer_code).padStart(4, '0');
 
-    const rootWarehouse = rootCode;
-    const hirakataWarehouse = `${rootCode}-hirakata`;
-    const normalWarehouse = `${rootCode}-hirakata-normal`;
-    const ngWarehouse = `${rootCode}-hirakata-ng`;
-    const workRequiredWarehouse = `${rootCode}-hirakata-work-required`;
+    const rootWarehouseName = rootCode;
+    const rootWarehouseId = getWarehouseId(rootWarehouseName);
 
-    const alreadyExists = await warehouseExists(rootWarehouse);
+    const hirakataWarehouseName = `${rootCode}-hirakata`;
+    const hirakataWarehouseId = getWarehouseId(hirakataWarehouseName);
 
-    if (alreadyExists) {
-      return Response.json(
-        { error: `Warehouse ${rootWarehouse} already exists` },
-        { status: 409 }
-      );
-    }
+    const normalWarehouseName = `${rootCode}-hirakata-normal`;
+    const ngWarehouseName = `${rootCode}-hirakata-ng`;
+    const workRequiredWarehouseName = `${rootCode}-hirakata-work-required`;
 
-    await createWarehouse({
-      name: rootWarehouse,
-      warehouse_name: rootWarehouse,
+    const created = [];
+
+    const root = await createWarehouseIfMissing({
+      warehouse_name: rootWarehouseName,
       is_group: 1,
     });
+    created.push(root);
 
-    await createWarehouse({
-      name: hirakataWarehouse,
-      warehouse_name: hirakataWarehouse,
-      parent_warehouse: rootWarehouse,
+    const hirakata = await createWarehouseIfMissing({
+      warehouse_name: hirakataWarehouseName,
+      parent_warehouse: rootWarehouseId,
       is_group: 1,
     });
+    created.push(hirakata);
 
-    await createWarehouse({
-      name: normalWarehouse,
-      warehouse_name: normalWarehouse,
-      parent_warehouse: hirakataWarehouse,
+    const normal = await createWarehouseIfMissing({
+      warehouse_name: normalWarehouseName,
+      parent_warehouse: hirakataWarehouseId,
       is_group: 0,
     });
+    created.push(normal);
 
-    await createWarehouse({
-      name: ngWarehouse,
-      warehouse_name: ngWarehouse,
-      parent_warehouse: hirakataWarehouse,
+    const ng = await createWarehouseIfMissing({
+      warehouse_name: ngWarehouseName,
+      parent_warehouse: hirakataWarehouseId,
       is_group: 0,
     });
+    created.push(ng);
 
-    await createWarehouse({
-      name: workRequiredWarehouse,
-      warehouse_name: workRequiredWarehouse,
-      parent_warehouse: hirakataWarehouse,
+    const workRequired = await createWarehouseIfMissing({
+      warehouse_name: workRequiredWarehouseName,
+      parent_warehouse: hirakataWarehouseId,
       is_group: 0,
     });
+    created.push(workRequired);
 
     return Response.json({
       ok: true,
-      warehouses: [
-        rootWarehouse,
-        hirakataWarehouse,
-        normalWarehouse,
-        ngWarehouse,
-        workRequiredWarehouse,
-      ],
+      root: rootWarehouseId,
+      warehouses: created,
     });
   } catch (error) {
     return Response.json(
