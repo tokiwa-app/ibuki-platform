@@ -101,69 +101,67 @@ export default function CustomerDetailPage() {
   const [warehouse, setWarehouse] = useState(null);
   const [warehouses, setWarehouses] = useState([]);
   const [warehouseLoading, setWarehouseLoading] = useState(false);
+  const [creatingWarehouses, setCreatingWarehouses] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
+  async function loadCustomerAndWarehouses() {
+    setLoading(true);
 
-      const res = await fetch(`/api/erpnext/customer/${code}`);
-      const data = await res.json();
+    const res = await fetch(`/api/erpnext/customer/${code}`);
+    const data = await res.json();
 
-      setForm({
-        name: data?.name || '',
-        customer_name: data?.customer_name || '',
-        customer_type: data?.customer_type || '',
-        customer_group: data?.customer_group || '',
-        territory: data?.territory || '',
-        tax_id: data?.tax_id || '',
-        tax_category: data?.tax_category || '',
-        billing_currency: data?.billing_currency || '',
-        default_price_list: data?.default_price_list || '',
-        payment_terms: data?.payment_terms || '',
-        website: data?.website || '',
-        disabled: data?.disabled || 0,
-        is_frozen: data?.is_frozen || 0,
-      });
+    setForm({
+      name: data?.name || '',
+      customer_name: data?.customer_name || '',
+      customer_type: data?.customer_type || '',
+      customer_group: data?.customer_group || '',
+      territory: data?.territory || '',
+      tax_id: data?.tax_id || '',
+      tax_category: data?.tax_category || '',
+      billing_currency: data?.billing_currency || '',
+      default_price_list: data?.default_price_list || '',
+      payment_terms: data?.payment_terms || '',
+      website: data?.website || '',
+      disabled: data?.disabled || 0,
+      is_frozen: data?.is_frozen || 0,
+    });
 
-      const whCode = getWarehouseCode(data?.name || code);
-      setWarehouseCode(whCode);
+    const whCode = getWarehouseCode(data?.name || code);
+    setWarehouseCode(whCode);
 
-      setWarehouseLoading(true);
+    setWarehouseLoading(true);
 
-      try {
-        const whRes = await fetch(`/api/erpnext/warehouse/${whCode}`);
+    try {
+      const whRes = await fetch(`/api/erpnext/warehouse/${whCode}`);
 
-        if (whRes.ok) {
-          const whData = await whRes.json();
-          setWarehouse(whData);
+      if (whRes.ok) {
+        const whData = await whRes.json();
+        setWarehouse(whData);
 
-          const childrenRes = await fetch(
-            `/api/erpnext/warehouse?parent_warehouse=${encodeURIComponent(
-              whCode
-            )}`
-          );
+        const childrenRes = await fetch(
+          `/api/erpnext/warehouse?parent_warehouse=${encodeURIComponent(whCode)}`
+        );
 
-          if (childrenRes.ok) {
-            const childrenData = await childrenRes.json();
-            setWarehouses(childrenData?.data || childrenData || []);
-          } else {
-            setWarehouses([]);
-          }
+        if (childrenRes.ok) {
+          const childrenData = await childrenRes.json();
+          setWarehouses(childrenData?.data || childrenData || []);
         } else {
-          setWarehouse(null);
           setWarehouses([]);
         }
-      } catch (error) {
+      } else {
         setWarehouse(null);
         setWarehouses([]);
-      } finally {
-        setWarehouseLoading(false);
       }
-
+    } catch (error) {
+      setWarehouse(null);
+      setWarehouses([]);
+    } finally {
+      setWarehouseLoading(false);
       setLoading(false);
     }
+  }
 
-    if (code) load();
+  useEffect(() => {
+    if (code) loadCustomerAndWarehouses();
   }, [code]);
 
   function updateField(key, value) {
@@ -187,6 +185,35 @@ export default function CustomerDetailPage() {
     }
 
     alert('保存しました');
+  }
+
+  async function createRelatedWarehouses() {
+    if (!warehouseCode) return;
+
+    const ok = confirm(
+      `倉庫 ${warehouseCode} と配下倉庫を自動作成します。よろしいですか？`
+    );
+
+    if (!ok) return;
+
+    setCreatingWarehouses(true);
+
+    const res = await fetch('/api/erpnext/warehouse/create-customer-warehouses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_code: form.name || code }),
+    });
+
+    setCreatingWarehouses(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data?.error || '倉庫作成に失敗しました');
+      return;
+    }
+
+    alert('関連倉庫を作成しました');
+    await loadCustomerAndWarehouses();
   }
 
   if (loading) {
@@ -242,9 +269,7 @@ export default function CustomerDetailPage() {
           <input
             type="checkbox"
             checked={!!form.is_frozen}
-            onChange={(e) =>
-              updateField('is_frozen', e.target.checked ? 1 : 0)
-            }
+            onChange={(e) => updateField('is_frozen', e.target.checked ? 1 : 0)}
           />
           凍結 / Is Frozen
         </label>
@@ -264,23 +289,15 @@ export default function CustomerDetailPage() {
         <div style={warehouseBoxStyle}>
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: '#777' }}>Warehouse Code</div>
-            <div style={{ fontSize: 24, fontWeight: 700 }}>
-              {warehouseCode}
-            </div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{warehouseCode}</div>
           </div>
 
           {warehouseLoading ? (
             <div>倉庫を確認中...</div>
           ) : warehouse ? (
             <>
-              <div
-                style={{
-                  marginBottom: 16,
-                  color: '#15803d',
-                  fontWeight: 600,
-                }}
-              >
-                ✅ 親倉庫あり
+              <div style={{ marginBottom: 16, color: '#15803d', fontWeight: 600 }}>
+                ✅ 関連倉庫あり
               </div>
 
               <table style={tableStyle}>
@@ -300,23 +317,17 @@ export default function CustomerDetailPage() {
                       {warehouse.warehouse_name || warehouse.name}
                     </td>
                     <td style={tdStyle}>-</td>
-                    <td style={tdStyle}>
-                      {warehouse.disabled ? '無効' : '有効'}
-                    </td>
+                    <td style={tdStyle}>{warehouse.disabled ? '無効' : '有効'}</td>
                   </tr>
 
                   {warehouses.map((wh) => (
                     <tr key={wh.name}>
                       <td style={tdStyle}>{wh.name}</td>
-                      <td style={tdStyle}>
-                        {wh.warehouse_name || wh.name}
-                      </td>
+                      <td style={tdStyle}>{wh.warehouse_name || wh.name}</td>
                       <td style={tdStyle}>
                         {wh.parent_warehouse || warehouseCode}
                       </td>
-                      <td style={tdStyle}>
-                        {wh.disabled ? '無効' : '有効'}
-                      </td>
+                      <td style={tdStyle}>{wh.disabled ? '無効' : '有効'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -329,8 +340,18 @@ export default function CustomerDetailPage() {
               )}
             </>
           ) : (
-            <div style={{ color: '#b91c1c', fontWeight: 600 }}>
-              ❌ 倉庫 {warehouseCode} は未作成です
+            <div>
+              <div style={{ color: '#b91c1c', fontWeight: 600, marginBottom: 16 }}>
+                ❌ 倉庫 {warehouseCode} は未作成です
+              </div>
+
+              <button
+                onClick={createRelatedWarehouses}
+                disabled={creatingWarehouses}
+                style={buttonStyle}
+              >
+                {creatingWarehouses ? '作成中...' : '関連倉庫を作成'}
+              </button>
             </div>
           )}
         </div>
@@ -353,6 +374,7 @@ const buttonStyle = {
   color: '#fff',
   border: 'none',
   borderRadius: 6,
+  cursor: 'pointer',
 };
 
 const warehouseBoxStyle = {
