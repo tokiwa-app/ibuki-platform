@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import CustomerEditForm from './CustomerEditForm';
 import CustomerWarehouses from './CustomerWarehouses';
+import CustomerItems from './CustomerItems';
 
 export default function CustomerDetailPage() {
   const router = useRouter();
@@ -61,8 +62,10 @@ export default function CustomerDetailPage() {
       </p>
 
       <CustomerEditForm code={code} form={form} setForm={setForm} />
-
       <CustomerWarehouses customerCode={form.name || code} />
+      <CustomerItems customerCode={form.name || code} />
+    
+          
     </main>
   );
 }
