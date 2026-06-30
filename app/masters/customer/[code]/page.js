@@ -9,7 +9,7 @@ const fields = [
     ja: '顧客コード',
     en: 'Customer',
     readonly: true,
-    placeholder: '例：0001',
+    placeholder: '例：5',
     help: 'ERPNext上のCustomer IDです。',
   },
   {
@@ -84,6 +84,10 @@ const fields = [
   },
 ];
 
+function getWarehouseCode(customerCode) {
+  return String(customerCode || '').padStart(4, '0');
+}
+
 export default function CustomerDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -92,6 +96,11 @@ export default function CustomerDetailPage() {
   const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [warehouseCode, setWarehouseCode] = useState('');
+  const [warehouse, setWarehouse] = useState(null);
+  const [warehouses, setWarehouses] = useState([]);
+  const [warehouseLoading, setWarehouseLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -115,6 +124,41 @@ export default function CustomerDetailPage() {
         disabled: data?.disabled || 0,
         is_frozen: data?.is_frozen || 0,
       });
+
+      const whCode = getWarehouseCode(data?.name || code);
+      setWarehouseCode(whCode);
+
+      setWarehouseLoading(true);
+
+      try {
+        const whRes = await fetch(`/api/erpnext/warehouse/${whCode}`);
+
+        if (whRes.ok) {
+          const whData = await whRes.json();
+          setWarehouse(whData);
+
+          const childrenRes = await fetch(
+            `/api/erpnext/warehouse?parent_warehouse=${encodeURIComponent(
+              whCode
+            )}`
+          );
+
+          if (childrenRes.ok) {
+            const childrenData = await childrenRes.json();
+            setWarehouses(childrenData?.data || childrenData || []);
+          } else {
+            setWarehouses([]);
+          }
+        } else {
+          setWarehouse(null);
+          setWarehouses([]);
+        }
+      } catch (error) {
+        setWarehouse(null);
+        setWarehouses([]);
+      } finally {
+        setWarehouseLoading(false);
+      }
 
       setLoading(false);
     }
@@ -198,7 +242,9 @@ export default function CustomerDetailPage() {
           <input
             type="checkbox"
             checked={!!form.is_frozen}
-            onChange={(e) => updateField('is_frozen', e.target.checked ? 1 : 0)}
+            onChange={(e) =>
+              updateField('is_frozen', e.target.checked ? 1 : 0)
+            }
           />
           凍結 / Is Frozen
         </label>
@@ -207,6 +253,88 @@ export default function CustomerDetailPage() {
           {saving ? '保存中...' : '保存'}
         </button>
       </div>
+
+      <section style={{ marginTop: 40, maxWidth: 760 }}>
+        <h2 style={{ fontSize: 22, marginBottom: 8 }}>関連倉庫</h2>
+
+        <p style={{ color: '#666', marginBottom: 16 }}>
+          顧客コードを4桁ゼロ埋めした倉庫コードと、その配下倉庫を表示します。
+        </p>
+
+        <div style={warehouseBoxStyle}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: '#777' }}>Warehouse Code</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>
+              {warehouseCode}
+            </div>
+          </div>
+
+          {warehouseLoading ? (
+            <div>倉庫を確認中...</div>
+          ) : warehouse ? (
+            <>
+              <div
+                style={{
+                  marginBottom: 16,
+                  color: '#15803d',
+                  fontWeight: 600,
+                }}
+              >
+                ✅ 親倉庫あり
+              </div>
+
+              <table style={tableStyle}>
+                <thead>
+                  <tr>
+                    <th style={thStyle}>倉庫コード</th>
+                    <th style={thStyle}>倉庫名</th>
+                    <th style={thStyle}>親倉庫</th>
+                    <th style={thStyle}>状態</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  <tr>
+                    <td style={tdStyle}>{warehouse.name}</td>
+                    <td style={tdStyle}>
+                      {warehouse.warehouse_name || warehouse.name}
+                    </td>
+                    <td style={tdStyle}>-</td>
+                    <td style={tdStyle}>
+                      {warehouse.disabled ? '無効' : '有効'}
+                    </td>
+                  </tr>
+
+                  {warehouses.map((wh) => (
+                    <tr key={wh.name}>
+                      <td style={tdStyle}>{wh.name}</td>
+                      <td style={tdStyle}>
+                        {wh.warehouse_name || wh.name}
+                      </td>
+                      <td style={tdStyle}>
+                        {wh.parent_warehouse || warehouseCode}
+                      </td>
+                      <td style={tdStyle}>
+                        {wh.disabled ? '無効' : '有効'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {warehouses.length === 0 && (
+                <div style={{ marginTop: 12, color: '#777' }}>
+                  配下倉庫はありません。
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ color: '#b91c1c', fontWeight: 600 }}>
+              ❌ 倉庫 {warehouseCode} は未作成です
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }
@@ -225,4 +353,31 @@ const buttonStyle = {
   color: '#fff',
   border: 'none',
   borderRadius: 6,
+};
+
+const warehouseBoxStyle = {
+  border: '1px solid #ddd',
+  borderRadius: 8,
+  padding: 16,
+  background: '#fafafa',
+};
+
+const tableStyle = {
+  width: '100%',
+  borderCollapse: 'collapse',
+  background: '#fff',
+};
+
+const thStyle = {
+  textAlign: 'left',
+  padding: 10,
+  borderBottom: '1px solid #ddd',
+  fontSize: 13,
+  color: '#555',
+};
+
+const tdStyle = {
+  padding: 10,
+  borderBottom: '1px solid #eee',
+  fontSize: 14,
 };
