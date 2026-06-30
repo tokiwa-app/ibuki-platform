@@ -2,12 +2,20 @@ import { erpnextRequest } from '../../../../lib/erpnextClient';
 
 export const dynamic = 'force-dynamic';
 
-async function getWarehouseCompany(defaultWarehouse) {
-  const result = await erpnextRequest(
-    `/api/resource/Warehouse/${encodeURIComponent(defaultWarehouse)}`
-  );
+const COMPANY_ABBR = 'T';
 
-  return result?.data?.company;
+function getCustomerCode(customerCode) {
+  return String(customerCode || '').padStart(4, '0');
+}
+
+function getCustomerWarehouses(customerCode) {
+  const code = getCustomerCode(customerCode);
+
+  return [
+    `${code}-hirakata-normal - ${COMPANY_ABBR}`,
+    `${code}-hirakata-ng - ${COMPANY_ABBR}`,
+    `${code}-hirakata-work-required - ${COMPANY_ABBR}`,
+  ];
 }
 
 export async function GET(request) {
@@ -19,27 +27,52 @@ export async function GET(request) {
       return Response.json([]);
     }
 
-    const fields =
-      '["name","item_code","item_name","item_group","stock_uom","disabled","item_defaults"]';
+    const defaultWarehouses = getCustomerWarehouses(customerCode);
 
     const filters = [
-      ['Item', 'item_code', 'like', `${customerCode}-%`],
+      ['Item Default', 'default_warehouse', 'in', defaultWarehouses],
     ];
 
+    const fields =
+      '["parent","default_warehouse","company"]';
+
     const path =
-      `/api/resource/Item?fields=${encodeURIComponent(fields)}` +
+      `/api/resource/Item Default?fields=${encodeURIComponent(fields)}` +
       `&filters=${encodeURIComponent(JSON.stringify(filters))}` +
-      `&limit_page_length=100`;
+      `&limit_page_length=500`;
 
-    const result = await erpnextRequest(path);
+    const defaultsResult = await erpnextRequest(path);
+    const defaults = defaultsResult.data || [];
 
-    const items = result.data || [];
+    const itemNames = [...new Set(defaults.map((row) => row.parent))];
+
+    if (itemNames.length === 0) {
+      return Response.json([]);
+    }
+
+    const itemFields =
+      '["name","item_code","item_name","item_group","stock_uom","disabled"]';
+
+    const itemFilters = [['Item', 'name', 'in', itemNames]];
+
+    const itemPath =
+      `/api/resource/Item?fields=${encodeURIComponent(itemFields)}` +
+      `&filters=${encodeURIComponent(JSON.stringify(itemFilters))}` +
+      `&limit_page_length=500`;
+
+    const itemsResult = await erpnextRequest(itemPath);
+    const items = itemsResult.data || [];
+
+    const defaultMap = new Map();
+
+    for (const row of defaults) {
+      defaultMap.set(row.parent, row.default_warehouse);
+    }
 
     return Response.json(
       items.map((item) => ({
         ...item,
-        default_warehouse:
-          item.item_defaults?.[0]?.default_warehouse || '',
+        default_warehouse: defaultMap.get(item.name) || '',
       }))
     );
   } catch (error) {
@@ -50,14 +83,22 @@ export async function GET(request) {
   }
 }
 
+async function getWarehouseCompany(defaultWarehouse) {
+  const result = await erpnextRequest(
+    `/api/resource/Warehouse/${encodeURIComponent(defaultWarehouse)}`
+  );
+
+  return result?.data?.company;
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    const customerCode = String(body.customer_code || '').padStart(4, '0');
+    const customerCode = getCustomerCode(body.customer_code);
     const customerItemCode = String(body.customer_item_code || '').trim();
 
-    if (!customerCode) {
+    if (!body.customer_code) {
       return Response.json(
         { error: 'customer_code is required' },
         { status: 400 }
@@ -86,13 +127,6 @@ export async function POST(request) {
     }
 
     const company = await getWarehouseCompany(body.default_warehouse);
-
-    if (!company) {
-      return Response.json(
-        { error: 'Default WarehouseのCompanyが取得できません' },
-        { status: 400 }
-      );
-    }
 
     const itemCode = `${customerCode}-${customerItemCode}`;
 
