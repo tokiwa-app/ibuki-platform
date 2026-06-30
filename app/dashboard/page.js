@@ -27,44 +27,73 @@ export default function Dashboard() {
     return <p style={{ textAlign: 'center', marginTop: 40 }}>Loading...</p>;
   }
 
+  const cards = [
+    {
+      title: 'WMS',
+      description: '入出庫・在庫・倉庫業務',
+      path: '/wms',
+    },
+    {
+      title: 'HMS',
+      description: 'ハンディ・現場作業管理',
+      path: '/hms',
+    },
+    {
+      title: 'マスター管理',
+      description: '顧客・商品・倉庫などの共通マスター',
+      path: '/masters',
+    },
+  ];
+
   return (
     <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif' }}>
-      <header style={{ margin: '12px 0 24px' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>
-          Ibuki WMS
+      <header style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>
+          Ibuki Platform
         </h1>
-        <p style={{ marginTop: 6, fontSize: 13, color: '#666' }}>
-          トップ画面
+        <p style={{ marginTop: 8, color: '#666' }}>
+          利用する機能を選択してください。
         </p>
       </header>
 
       <div
         style={{
-          background: '#ffffff',
-          padding: 20,
-          borderRadius: 10,
-          minHeight: '50vh',
-          width: '100%',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: 16,
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 600 }}>
-          📌 今日のサマリー
-        </h2>
-        <p style={{ fontSize: 13, color: '#444' }}>
-          今後ここに在庫アラート・出荷状況・作業状況を表示します。
-        </p>
-
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            localStorage.removeItem('active_tenant_id');
-            router.replace('/');
-          }}
-          style={{ marginTop: 24, padding: '8px 16px' }}
-        >
-          ログアウト
-        </button>
+        {cards.map((card) => (
+          <button
+            key={card.title}
+            onClick={() => router.push(card.path)}
+            style={{
+              textAlign: 'left',
+              padding: 24,
+              borderRadius: 12,
+              border: '1px solid #ddd',
+              background: '#fff',
+              cursor: 'pointer',
+            }}
+          >
+            <h2 style={{ fontSize: 22, margin: '0 0 8px' }}>{card.title}</h2>
+            <p style={{ margin: 0, fontSize: 14, color: '#666' }}>
+              {card.description}
+            </p>
+          </button>
+        ))}
       </div>
+
+      <button
+        onClick={async () => {
+          await supabase.auth.signOut();
+          localStorage.removeItem('active_tenant_id');
+          router.replace('/');
+        }}
+        style={{ marginTop: 32, padding: '8px 16px' }}
+      >
+        ログアウト
+      </button>
     </main>
   );
 }
