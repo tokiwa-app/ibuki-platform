@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import DeliveryDetail from '../../components/wms/DeliveryDetail';
 import DeliveryList from '../../components/wms/DeliveryList';
 
@@ -13,7 +13,14 @@ export default function WmsPage() {
         <h1 style={{ margin: 0 }}>出庫一覧</h1>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '420px 1fr',
+          gap: 16,
+          alignItems: 'start',
+        }}
+      >
         <DeliveryList selectedName={selectedName} onSelect={setSelectedName} />
         <DeliveryDetail name={selectedName} />
       </div>
