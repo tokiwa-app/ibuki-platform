@@ -3,8 +3,8 @@ import { erpnextRequest } from '../../../../../lib/erpnextClient';
 export const dynamic = 'force-dynamic';
 
 export async function GET(
-  request,
-  { params }
+  request: Request,
+  { params }: { params: { name: string } }
 ) {
   try {
     const name = decodeURIComponent(params.name);
@@ -14,7 +14,7 @@ export async function GET(
     const result = await erpnextRequest(path);
 
     return Response.json(result.data || null);
-  } catch (error) {
+  } catch (error: any) {
     return Response.json(
       { error: error.message || 'Delivery Note詳細の取得に失敗しました' },
       { status: 500 }
