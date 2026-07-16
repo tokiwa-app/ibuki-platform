@@ -31,7 +31,7 @@ export default function Dashboard() {
     {
       title: 'WMS',
       description: '入出庫・在庫・倉庫業務',
-      path: '/wms',
+      path: '/wms/delivery-note',
     },
     {
       title: 'HMS',
