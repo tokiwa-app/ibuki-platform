@@ -4,31 +4,8 @@ import { useState } from 'react';
 import DeliveryDetail from '../../components/wms/DeliveryDetail';
 import DeliveryList from '../../components/wms/DeliveryList';
 
-export type DeliveryNote = {
-  name: string;
-  customer_name?: string;
-  customer?: string;
-  posting_date?: string;
-  status?: string;
-  transporter_name?: string;
-  instructions?: string;
-  custom_delivery_name?: string;
-  custom_delivery_zip?: string;
-  custom_delivery_address?: string;
-  custom_delivery_tel?: string;
-  custom_delivery_date?: string;
-  custom_delivery_time?: string;
-  items?: Array<{
-    name: string;
-    item_code?: string;
-    item_name?: string;
-    qty?: number;
-    warehouse?: string;
-  }>;
-};
-
 export default function WmsPage() {
-  const [selectedData, setSelectedData] = useState<DeliveryNote | null>(null);
+  const [selectedName, setSelectedName] = useState('');
 
   return (
     <main
@@ -42,6 +19,7 @@ export default function WmsPage() {
         overflow: 'hidden',
       }}
     >
+      {/* 上部ツールバー */}
       <header
         style={{
           padding: '12px 16px',
@@ -67,6 +45,7 @@ export default function WmsPage() {
         </div>
       </header>
 
+      {/* メインエリア（50:50等分割） */}
       <div
         style={{
           flex: 1,
@@ -77,13 +56,13 @@ export default function WmsPage() {
           overflow: 'hidden',
         }}
       >
-        {/* selectedName を selectedData.name から確実に渡す */}
+        {/* 【ここを確実に修正！】onSelect={setSelectedName} で正しいID連携に。 */}
         <DeliveryList 
-          selectedName={selectedData?.name || ''} 
-          onSelectData={setSelectedData} 
+          selectedName={selectedName} 
+          onSelect={setSelectedName} 
         />
         <DeliveryDetail 
-          data={selectedData} 
+          name={selectedName} 
         />
       </div>
     </main>
