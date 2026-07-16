@@ -4,8 +4,31 @@ import { useState } from 'react';
 import DeliveryDetail from '../../components/wms/DeliveryDetail';
 import DeliveryList from '../../components/wms/DeliveryList';
 
+export type DeliveryNote = {
+  name: string;
+  customer_name?: string;
+  customer?: string;
+  posting_date?: string;
+  status?: string;
+  transporter_name?: string;
+  instructions?: string;
+  custom_delivery_name?: string;
+  custom_delivery_zip?: string;
+  custom_delivery_address?: string;
+  custom_delivery_tel?: string;
+  custom_delivery_date?: string;
+  custom_delivery_time?: string;
+  items?: Array<{
+    name: string;
+    item_code?: string;
+    item_name?: string;
+    qty?: number;
+    warehouse?: string;
+  }>;
+};
+
 export default function WmsPage() {
-  const [selectedName, setSelectedName] = useState('');
+  const [selectedData, setSelectedData] = useState<DeliveryNote | null>(null);
 
   return (
     <main
@@ -19,11 +42,10 @@ export default function WmsPage() {
         overflow: 'hidden',
       }}
     >
-      {/* 画面上部：Access風の検索・操作ツールバー */}
       <header
         style={{
           padding: '12px 16px',
-          backgroundColor: '#2b579a', // Access風のブルー
+          backgroundColor: '#2b579a',
           color: '#fff',
           display: 'flex',
           justifyContent: 'space-between',
@@ -45,19 +67,24 @@ export default function WmsPage() {
         </div>
       </header>
 
-      {/* メインエリア：左右 50 : 50 分割 */}
       <div
         style={{
           flex: 1,
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr', // 50:50等分割
+          gridTemplateColumns: '1fr 1fr',
           gap: 12,
           padding: 12,
-          overflow: 'hidden', // 画面全体のスクロールを防ぐ
+          overflow: 'hidden',
         }}
       >
-        <DeliveryList selectedName={selectedName} onSelect={setSelectedName} />
-        <DeliveryDetail name={selectedName} />
+        {/* selectedName を selectedData.name から確実に渡す */}
+        <DeliveryList 
+          selectedName={selectedData?.name || ''} 
+          onSelectData={setSelectedData} 
+        />
+        <DeliveryDetail 
+          data={selectedData} 
+        />
       </div>
     </main>
   );
