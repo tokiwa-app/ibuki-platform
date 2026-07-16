@@ -16,8 +16,7 @@ export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: 
     async function fetchReceipts() {
       setLoading(true);
       try {
-        // ERPNextから直接入庫データを取得するAPI（仮）
-        // ※ 既存のGET APIがある、または別途作成する場合
+        // ERPNextから入庫履歴（PR）の一覧を取得
         const fields = '["name","supplier","posting_date","docstatus"]';
         const res = await fetch(`/api/resource/Purchase Receipt?fields=${fields}&order_by=creation desc&limit_page_length=50`);
         const data = await res.json();
@@ -40,10 +39,36 @@ export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: 
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        height: '100%',
       }}
     >
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', backgroundColor: '#fafafa' }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 'bold' }}>入庫履歴（最近の50件）</h3>
+      {/* リストヘッダーに新規作成ボタンを配置 (デリバリー参考) */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid #eee',
+          backgroundColor: '#fafafa',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 'bold' }}>入庫伝票一覧</h3>
+        <button
+          onClick={() => onSelect('')} // 選択を空にすることで、右側を新規フォームにする
+          style={{
+            padding: '4px 8px',
+            backgroundColor: '#2e7d32',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            fontSize: 12,
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          ＋ 新規入庫
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
@@ -60,12 +85,12 @@ export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: 
                   key={rc.name}
                   onClick={() => onSelect(rc.name)}
                   style={{
-                    padding: '10px 12px',
+                    padding: '12px',
                     borderRadius: 4,
-                    border: isSelected ? '1px solid #2e7d32' : '1px solid #e0e0e0',
+                    border: isSelected ? '1.5px solid #2e7d32' : '1px solid #e0e0e0',
                     backgroundColor: isSelected ? '#e8f5e9' : '#fff',
                     cursor: 'pointer',
-                    transition: 'all 0.15s ease',
+                    transition: 'all 0.1s ease',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -75,7 +100,7 @@ export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: 
                     <span style={{ fontSize: 11, color: '#888' }}>{rc.posting_date}</span>
                   </div>
                   <div style={{ fontSize: 12, color: '#555' }}>
-                    荷主/仕入先: <strong>{rc.supplier}</strong>
+                    荷主: <strong>{rc.supplier}</strong>
                   </div>
                 </div>
               );
