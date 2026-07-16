@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 
 type DeliveryNoteRow = {
   name: string;
+  customer?: string;      // 追加：取引先ID (例: "52")
+  customer_name?: string; // 追加：取引先名 (例: "PIXY PF" または "ヘア イン アブレ")
   posting_date?: string;
   custom_delivery_name?: string;
   custom_delivery_date?: string;
   transporter_name?: string;
   status?: string;
-  // 進捗状況（Access画面右側のチェック欄を再現）
   custom_is_instructed?: boolean; 
   custom_is_completed?: boolean;
 };
@@ -31,8 +32,10 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
         setRows(list);
+        
+        // 初回ロード時のみ、何も選択されていなければ一番上を選択
         if (list.length > 0 && !selectedName) {
-          onSelect(list[0].name); // 初回自動選択
+          onSelect(list[0].name);
         }
       } catch (e) {
         console.error(e);
@@ -41,7 +44,8 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
       }
     }
     load();
-  }, [onSelect, selectedName]);
+    // 【修正1】監視リストから selectedName を削除。これでクリック時の「左も再ロード」が消えます。
+  }, [onSelect]); 
 
   if (loading) {
     return (
@@ -78,8 +82,8 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
       >
         <div>区分</div>
         <div>出荷日</div>
-        <div>納品先</div>
-        <div>住所</div>
+        <div>取引先名（名称）</div>
+        <div>納品先（住所）</div>
         <div>運送便</div>
         <div>指示</div>
         <div>完了</div>
@@ -101,30 +105,36 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
                 borderBottom: '1px solid #ddd',
                 fontSize: 11,
                 cursor: 'pointer',
-                backgroundColor: isSelected ? '#b3d1ff' : '#fff', // 選択時ははっきり青く
+                backgroundColor: isSelected ? '#b3d1ff' : '#fff', // 選択時ははっきり青
                 transition: 'background-color 0.1s',
               }}
             >
               {/* 区分 */}
               <div style={{ textAlign: 'center', fontWeight: 'bold', color: '#2b579a' }}>出庫</div>
+              
               {/* 出荷日 */}
-              <div style={{ textAlign: 'center' }}>{row.posting_date?.substring(5) || '-'}</div> {/* MM-DD形式に */}
-              {/* 納品先 */}
+              <div style={{ textAlign: 'center' }}>{row.posting_date?.substring(5) || '-'}</div>
+              
+              {/* 【修正2】取引先名（Accessの名称カラム） */}
               <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 4px' }}>
+                {row.customer_name || row.customer || '-'}
+              </div>
+              
+              {/* 納品先名 / 住所 */}
+              <div style={{ color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 4px' }}>
                 {row.custom_delivery_name || '-'}
               </div>
-              {/* 住所 */}
-              <div style={{ color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 4px' }}>
-                {row.custom_delivery_name || '神奈川県横浜市...'}
-              </div>
+              
               {/* 運送便 */}
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
                 {row.transporter_name || '-'}
               </div>
+              
               {/* 指示チェック状況 */}
               <div style={{ textAlign: 'center' }}>
                 <span style={{ color: '#008000', fontWeight: 'bold' }}>✔</span>
               </div>
+              
               {/* 完了チェック状況 */}
               <div style={{ textAlign: 'center' }}>
                 <span style={{ color: '#0066cc', fontWeight: 'bold' }}>✔</span>
