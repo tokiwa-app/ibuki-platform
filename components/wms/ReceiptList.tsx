@@ -1,0 +1,116 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+
+interface ReceiptListProps {
+  selectedName: string;
+  onSelect: (name: string) => void;
+  refreshTrigger: number;
+}
+
+export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: ReceiptListProps) {
+  const [receipts, setReceipts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchReceipts() {
+      setLoading(true);
+      try {
+        // ERPNextから入庫履歴（PR）の一覧を取得
+      const res = await fetch('/api/erpnext/purchase-receipt');
+      const data = await res.json();
+      
+      const list = Array.isArray(data) ? data : [];
+      setReceipts(list);
+      
+      console.log(data);
+      } catch (err) {
+        console.error('入庫履歴の取得に失敗しました', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchReceipts();
+  }, [refreshTrigger]);
+
+  return (
+    <div
+      style={{
+        backgroundColor: '#fff',
+        borderRadius: 6,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        height: '100%',
+      }}
+    >
+      {/* リストヘッダーに新規作成ボタンを配置 (デリバリー参考) */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid #eee',
+          backgroundColor: '#fafafa',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 'bold' }}>入庫伝票一覧</h3>
+        <button
+          onClick={() => onSelect('')} // 選択を空にすることで、右側を新規フォームにする
+          style={{
+            padding: '4px 8px',
+            backgroundColor: '#2e7d32',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 4,
+            fontSize: 12,
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          ＋ 新規入庫
+        </button>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 8 }}>
+        {loading ? (
+          <div style={{ padding: 16, textAlign: 'center', color: '#666' }}>読込中...</div>
+        ) : receipts.length === 0 ? (
+          <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>入庫履歴がありません</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {receipts.map((rc) => {
+              const isSelected = rc.name === selectedName;
+              return (
+                <div
+                  key={rc.name}
+                  onClick={() => onSelect(rc.name)}
+                  style={{
+                    padding: '12px',
+                    borderRadius: 4,
+                    border: isSelected ? '1.5px solid #2e7d32' : '1px solid #e0e0e0',
+                    backgroundColor: isSelected ? '#e8f5e9' : '#fff',
+                    cursor: 'pointer',
+                    transition: 'all 0.1s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 'bold', fontSize: 13, color: isSelected ? '#1b5e20' : '#333' }}>
+                      {rc.name}
+                    </span>
+                    <span style={{ fontSize: 11, color: '#888' }}>{rc.posting_date}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#555' }}>
+                    荷主: <strong>{rc.supplier}</strong>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
