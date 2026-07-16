@@ -21,8 +21,8 @@ export default function WmsPage() {
     >
       <MasterDetailLayout
         title="出庫管理"
-        leftTitle="出庫一覧"
-        rightTitle="出庫詳細"
+        titleBackground="#2b579a"
+        titleColor="#fff"
         left={
           <DeliveryList
             selectedName={selectedName}
