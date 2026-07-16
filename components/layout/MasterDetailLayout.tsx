@@ -4,10 +4,8 @@ import React from 'react';
 
 interface MasterDetailLayoutProps {
   title: React.ReactNode;
-
   titleBackground?: string;
   titleColor?: string;
-
   left: React.ReactNode;
   right: React.ReactNode;
 }
@@ -22,68 +20,73 @@ export default function MasterDetailLayout({
   return (
     <div
       style={{
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
-        minHeight: 0,
         overflow: 'hidden',
       }}
     >
-      {/* タイトルバー */}
+      {/* 固定タイトルバー */}
       <div
         style={{
+          flex: '0 0 auto',
           backgroundColor: titleBackground,
           color: titleColor,
           padding: '12px 16px',
           borderRadius: 8,
           fontSize: 18,
           fontWeight: 'bold',
-          marginBottom: 12,
-          flexShrink: 0,
+          boxSizing: 'border-box',
         }}
       >
         {title}
       </div>
 
-      {/* 左右 */}
+      {/* 左右ペイン */}
       <div
         style={{
-          display: 'flex',
-          flex: 1,
-          gap: 12,
+          flex: '1 1 0',
+          minWidth: 0,
           minHeight: 0,
-          overflow: 'hidden', // ★重要
+          display: 'flex',
+          gap: 12,
+          paddingTop: 12,
+          overflow: 'hidden',
+          boxSizing: 'border-box',
         }}
       >
-        {/* 左 */}
+        {/* 左ペインだけスクロール */}
         <div
           style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
+            flex: '1 1 0',
             minWidth: 0,
             minHeight: 0,
-            overflow: 'hidden',
-            background: '#fff',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            backgroundColor: '#fff',
             border: '1px solid #d9d9d9',
             borderRadius: 8,
+            boxSizing: 'border-box',
           }}
         >
           {left}
         </div>
 
-        {/* 右 */}
+        {/* 右ペインだけスクロール */}
         <div
           style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
+            flex: '1 1 0',
             minWidth: 0,
             minHeight: 0,
-            overflow: 'hidden',
-            background: '#fff',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            backgroundColor: '#fff',
             border: '1px solid #d9d9d9',
             borderRadius: 8,
+            boxSizing: 'border-box',
           }}
         >
           {right}
