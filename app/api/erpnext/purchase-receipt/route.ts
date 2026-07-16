@@ -11,18 +11,22 @@ export async function GET(request: Request) {
     const name = searchParams.get('name');
 
     if (name) {
-      // 詳細取得: /api/erpnext/purchase-receipt?name=PR-XXXXX
+      // 詳細取得: PR単体のデータは制限なしで取得
       const result = await erpnextRequest(`/api/resource/Purchase Receipt/${name}`, {
         method: 'GET',
       });
       return Response.json(result.data || result);
     } else {
-      // 一覧取得: /api/erpnext/purchase-receipt
-      const fields = encodeURIComponent(JSON.stringify(["name", "supplier", "posting_date", "docstatus"]));
-      const result = await erpnextRequest(
-        `/api/resource/Purchase Receipt?fields=${fields}&order_by=creation desc&limit_page_length=50`,
-        { method: 'GET' }
-      );
+      // 一覧取得: 画面と同じ条件 (docstatus=1, per_billed>=100) でフィルタ
+      const filters = JSON.stringify([
+        ["docstatus", "=", 1],
+        ["per_billed", ">=", 100]
+      ]);
+      const fields = JSON.stringify(["name", "supplier", "posting_date", "docstatus", "per_billed"]);
+      
+      const url = `/api/resource/Purchase Receipt?fields=${encodeURIComponent(fields)}&filters=${encodeURIComponent(filters)}&order_by=creation desc&limit_page_length=50`;
+      
+      const result = await erpnextRequest(url, { method: 'GET' });
       return Response.json(result.data || []);
     }
   } catch (error: any) {
