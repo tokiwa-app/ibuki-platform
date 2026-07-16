@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import DeliveryDetail from '../../components/wms/DeliveryDetail';
-import DeliveryList from '../../components/wms/DeliveryList';
+import DeliveryDetail from '../../../components/wms/DeliveryDetail';
+import DeliveryList from '../../../components/wms/DeliveryList';
 
 export default function WmsPage() {
   const [selectedName, setSelectedName] = useState('');
