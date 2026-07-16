@@ -1,4 +1,3 @@
-```tsx
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -541,4 +540,4 @@ const smallInputStyle: React.CSSProperties = {
   fontSize: 12,
   color: '#000',
 };
-```
+
