@@ -17,9 +17,13 @@ export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: 
       setLoading(true);
       try {
         // ERPNextから入庫履歴（PR）の一覧を取得
-        const res = await fetch('/api/erpnext/purchase-receipt');
-        const data = await res.json();
-        setReceipts(data.data || []);
+      const res = await fetch('/api/erpnext/purchase-receipt');
+      const data = await res.json();
+      
+      const list = Array.isArray(data) ? data : [];
+      setReceipts(list);
+      
+      console.log(data);
       } catch (err) {
         console.error('入庫履歴の取得に失敗しました', err);
       } finally {
