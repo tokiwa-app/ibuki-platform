@@ -1,4 +1,3 @@
-```ts
 import { erpnextRequest } from '../../../../lib/erpnextClient';
 
 export const dynamic = 'force-dynamic';
@@ -188,4 +187,4 @@ export async function POST(request: Request) {
     );
   }
 }
-```
+
