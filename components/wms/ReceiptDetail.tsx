@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 interface ReceiptDetailProps {
-  name: string; // 選択されたPR番号（空なら新規作成）
+  name: string; // 選択された伝票ID。空なら「新規作成モード」
   onSaveSuccess: () => void;
 }
 
@@ -15,7 +15,7 @@ interface PRItem {
 }
 
 export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProps) {
-  const isNew = !name;
+  const isNew = !name; // 伝票IDが空なら新規作成
   const [supplier, setSupplier] = useState('');
   const [items, setItems] = useState<PRItem[]>([
     { item_code: '', item_name: '', qty: 1, warehouse: 'Stores - HP' }
@@ -24,15 +24,17 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 過去の入庫情報を取得して閲覧モードにする
+  // 左カラムでの伝票選択切り替えを検知して表示内容を切り替える
   useEffect(() => {
     if (isNew) {
+      // 新規作成モードなのでフォームをクリア
       setSupplier('');
       setItems([{ item_code: '', item_name: '', qty: 1, warehouse: 'Stores - HP' }]);
       setError(null);
       return;
     }
 
+    // 既存伝票の閲覧モード：ERPNextから詳細データをロード
     async function fetchDetail() {
       setLoading(true);
       setError(null);
@@ -82,8 +84,8 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || '登録に失敗しました');
 
-      alert(`入庫を確定しました！(PR番号: ${result.name || '成功'})`);
-      onSaveSuccess();
+      alert(`入庫伝票を確定しました！(PR番号: ${result.name})`);
+      onSaveSuccess(); // 一覧をリフレッシュして選択を新規に戻す
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -94,18 +96,32 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
   if (loading) {
     return (
       <div style={containerStyle}>
-        <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>データを読み込み中...</div>
+        <div style={{ padding: 24, textAlign: 'center', color: '#666' }}>詳細データをロード中...</div>
       </div>
     );
   }
 
   return (
     <div style={containerStyle}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', backgroundColor: '#fafafa', display: 'flex', justifyContent: 'space-between' }}>
+      {/* 明細ヘッダー */}
+      <div
+        style={{
+          padding: '12px 16px',
+          borderBottom: '1px solid #eee',
+          backgroundColor: '#fafafa',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 'bold' }}>
-          {isNew ? '📦 新規入庫フォーム' : `🔍 入庫詳細 (${name})`}
+          {isNew ? '📦 新規入庫登録フォーム' : `🔍 入庫伝票明細 (${name})`}
         </h3>
-        {!isNew && <span style={{ fontSize: 11, color: '#2e7d32', fontWeight: 'bold' }}>保存済み（実在庫化完了）</span>}
+        {!isNew && (
+          <span style={{ fontSize: 11, color: '#2e7d32', fontWeight: 'bold', backgroundColor: '#e8f5e9', padding: '2px 6px', borderRadius: 4 }}>
+            ステータス: 保存完了（実在庫化済）
+          </span>
+        )}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
@@ -130,13 +146,14 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
             />
           </div>
 
-          {/* 明細行 */}
+          {/* 商品明細 */}
           <div>
-            <label style={labelStyle}>入庫商品明細</label>
+            <label style={labelStyle}>入庫商品明細一覧</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 6 }}>
               {items.map((item, index) => (
                 <div key={index} style={{ display: 'flex', gap: 6, alignItems: 'center', border: '1px solid #e0e0e0', padding: 8, borderRadius: 4, backgroundColor: '#fcfcfc' }}>
                   <div style={{ flex: 1 }}>
+                    <label style={subLabelStyle}>商品コード</label>
                     <input
                       type="text"
                       disabled={!isNew}
@@ -148,6 +165,7 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
                     />
                   </div>
                   <div style={{ flex: 1.5 }}>
+                    <label style={subLabelStyle}>品名</label>
                     <input
                       type="text"
                       disabled={!isNew}
@@ -158,6 +176,7 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
                     />
                   </div>
                   <div style={{ width: 60 }}>
+                    <label style={subLabelStyle}>数量</label>
                     <input
                       type="number"
                       disabled={!isNew}
@@ -169,6 +188,7 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
                     />
                   </div>
                   <div style={{ width: 100 }}>
+                    <label style={subLabelStyle}>格納先倉庫</label>
                     <input
                       type="text"
                       disabled={!isNew}
@@ -183,7 +203,7 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
                     <button
                       type="button"
                       onClick={() => handleRemoveItem(index)}
-                      style={{ border: 'none', background: 'none', color: '#d9534f', cursor: 'pointer', fontSize: 12, fontWeight: 'bold' }}
+                      style={{ border: 'none', background: 'none', color: '#d9534f', cursor: 'pointer', fontSize: 12, fontWeight: 'bold', marginTop: 14 }}
                     >
                       削除
                     </button>
@@ -198,12 +218,12 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
                 onClick={handleAddItem}
                 style={{ marginTop: 8, padding: '4px 8px', fontSize: 12, backgroundColor: '#e8f5e9', color: '#2e7d32', border: '1px solid #a5d6a7', borderRadius: 4, cursor: 'pointer' }}
               >
-                ＋ 行を追加
+                ＋ 商品を追加
               </button>
             )}
           </div>
 
-          {/* 登録ボタン */}
+          {/* 登録ボタン（新規作成時のみ表示） */}
           {isNew && (
             <div style={{ marginTop: 12, borderTop: '1px solid #eee', paddingTop: 16 }}>
               <button
@@ -221,7 +241,7 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
                   fontSize: 14,
                 }}
               >
-                {saving ? 'ERPNextに送信中...' : '📦 実在庫として登録（入庫確定）'}
+                {saving ? 'ERPNextに送信中...' : '📦 実在庫として入庫確定（保存）'}
               </button>
             </div>
           )}
@@ -238,12 +258,20 @@ const containerStyle: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   overflow: 'hidden',
+  height: '100%',
 };
 
 const labelStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 'bold',
   color: '#555',
+};
+
+const subLabelStyle: React.CSSProperties = {
+  fontSize: 10,
+  color: '#888',
+  display: 'block',
+  marginBottom: 2,
 };
 
 const inputStyle: React.CSSProperties = {
