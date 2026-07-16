@@ -17,8 +17,7 @@ export default function ReceiptList({ selectedName, onSelect, refreshTrigger }: 
       setLoading(true);
       try {
         // ERPNextから入庫履歴（PR）の一覧を取得
-        const fields = '["name","supplier","posting_date","docstatus"]';
-        const res = await fetch(`/api/resource/Purchase Receipt?fields=${fields}&order_by=creation desc&limit_page_length=50`);
+        const res = await fetch('/api/wms/purchase-receipt');
         const data = await res.json();
         setReceipts(data.data || []);
       } catch (err) {
