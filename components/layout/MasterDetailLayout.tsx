@@ -22,71 +22,51 @@ export default function MasterDetailLayout({
       style={{
         width: '100%',
         height: '100%',
-        minWidth: 0,
-        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
       }}
     >
-      {/* 固定タイトルバー */}
       <div
         style={{
-          flex: '0 0 auto',
           backgroundColor: titleBackground,
           color: titleColor,
           padding: '12px 16px',
           borderRadius: 8,
           fontSize: 18,
           fontWeight: 'bold',
-          boxSizing: 'border-box',
+          flexShrink: 0,
+          marginBottom: 12,
         }}
       >
         {title}
       </div>
 
-      {/* 左右ペイン */}
       <div
         style={{
-          flex: '1 1 0',
-          minWidth: 0,
+          flex: 1,
           minHeight: 0,
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
           gap: 12,
-          paddingTop: 12,
           overflow: 'hidden',
-          boxSizing: 'border-box',
         }}
       >
-        {/* 左ペインだけスクロール */}
         <div
           style={{
-            flex: '1 1 0',
             minWidth: 0,
             minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            backgroundColor: '#fff',
-            border: '1px solid #d9d9d9',
-            borderRadius: 8,
-            boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
           {left}
         </div>
 
-        {/* 右ペインだけスクロール */}
         <div
           style={{
-            flex: '1 1 0',
             minWidth: 0,
             minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            backgroundColor: '#fff',
-            border: '1px solid #d9d9d9',
-            borderRadius: 8,
-            boxSizing: 'border-box',
+            overflow: 'hidden',
           }}
         >
           {right}
