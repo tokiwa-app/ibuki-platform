@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from 'react';
 
-// APIが返すDelivery Note Item（明細）の型
+// Delivery Note明細の型
 type DeliveryItem = {
   name?: string;       // 既存明細のユニークID（ERPNext側での判定用、新規行は無し）
-  item_code: string;   // 商品コード（必須）
+  item_code: string;   // 商品コード（例: "0012-A001"）
   item_name: string;   // 品名
-  qty: number;         // 数量（必須）
+  qty: number;         // 数量
   uom?: string;        // 単位
-  warehouse?: string;  // 倉庫（必須）
+  warehouse?: string;  // 倉庫
 };
 
-// APIが返すDelivery Note本体の型
+// Delivery Note本体の型
 type DeliveryNote = {
   name: string;
-  customer?: string;
+  customer?: string;             // これが customer_code になります (例: "12" や "0012")
   customer_name?: string;
   posting_date?: string;
   transporter_name?: string;
@@ -29,12 +29,11 @@ type DeliveryNote = {
   items?: DeliveryItem[];
 };
 
-// /api/erpnext/item-master が返す商品マスタの型
-type ItemMaster = {
-  name: string;        // item_code に相当
+// 既存Item API (GET) が返す商品マスタの型
+type ErpnextItem = {
+  name: string;        // item_code に相当 (例: "0012-A001")
   item_name: string;   // 品名
   stock_uom?: string;  // 標準単位
-  default_warehouse?: string; // 標準倉庫
 };
 
 type Props = {
@@ -46,10 +45,15 @@ export default function DeliveryDetail({ name }: Props) {
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // 編集一時保持用
+  // 編集用の一時メモリ保持
   const [editData, setEditData] = useState<DeliveryNote | null>(null);
-  // 商品マスタリスト
-  const [itemMasterList, setItemMasterList] = useState<ItemMaster[]>([]);
+  // この取引先専用の商品マスタリスト
+  const [filteredItems, setFilteredItems] = useState<ErpnextItem[]>([]);
+
+  // 既存APIが提供するcustomer_codeパディング関数と同じ挙動をフロントでも用意
+  const getFormattedCustomerCode = (code: string | undefined) => {
+    return String(code || '').padStart(4, '0');
+  };
 
   // 1. 選択された伝票IDの切り替え時に最新情報をAPIからGET
   useEffect(() => {
@@ -62,15 +66,20 @@ export default function DeliveryDetail({ name }: Props) {
         // ① 伝票詳細を取得
         const resDetail = await fetch(`/api/erpnext/delivery-note/${encodeURIComponent(name)}`);
         if (!resDetail.ok) throw new Error('詳細データの取得に失敗しました');
-        const detailJson = await resDetail.json();
+        const detailJson: DeliveryNote = await resDetail.json();
+        
         setData(detailJson);
-        setEditData(JSON.parse(JSON.stringify(detailJson))); // ディープコピーして編集用ステートにセット
+        setEditData(JSON.parse(JSON.stringify(detailJson))); // 編集用にコピー
 
-        // ② 商品マスタ一覧を取得（選択ボックス用）
-        const resMaster = await fetch('/api/erpnext/item-master');
-        if (resMaster.ok) {
-          const masterJson = await resMaster.json();
-          setItemMasterList(masterJson);
+        // ② 顧客コード（customer）に紐づく商品マスタのみをGET（提示いただいたAPIを使用）
+        const customerCode = getFormattedCustomerCode(detailJson.customer);
+        if (customerCode && customerCode !== '0000') {
+          // 例: /api/erpnext/item?customer_code=0012
+          const resItems = await fetch(`/api/erpnext/item?customer_code=${customerCode}`);
+          if (resItems.ok) {
+            const itemsJson = await resItems.json();
+            setFilteredItems(itemsJson);
+          }
         }
       } catch (e) {
         console.error(e);
@@ -97,21 +106,20 @@ export default function DeliveryDetail({ name }: Props) {
     setEditData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
-  // 商品の新規追加（末尾に空の新規明細オブジェクトを挿入）
+  // 明細（商品）の新規追加（この顧客用の有効な商品の初期値を割り当てる）
   const handleAddItem = () => {
-    if (itemMasterList.length === 0) {
-      alert('商品マスタが取得されていません。');
+    if (filteredItems.length === 0) {
+      alert('この取引先に登録されている商品（Item）がありません。\nまずはERPNext側で商品を登録してください。');
       return;
     }
 
-    const defaultItem = itemMasterList[0];
+    const defaultItem = filteredItems[0];
     const newItem: DeliveryItem = {
-      // nameは自動採番されるため含めない（新規追加と判定させるため）
-      item_code: defaultItem.name,
+      item_code: defaultItem.name, // "0012-A001"
       item_name: defaultItem.item_name,
       qty: 1,
       uom: defaultItem.stock_uom || 'Nos',
-      warehouse: defaultItem.default_warehouse || 'Stores - HP',
+      warehouse: 'Stores - HP', // 運用のメイン倉庫(任意)
     };
 
     setEditData((prev) => {
@@ -120,9 +128,9 @@ export default function DeliveryDetail({ name }: Props) {
     });
   };
 
-  // プルダウン変更時、品名や標準倉庫も自動で連動引き当て
+  // プルダウン変更時、品名や単位も取引先商品リストから自動追従
   const handleItemSelect = (index: number, selectedCode: string) => {
-    const matched = itemMasterList.find((m) => m.name === selectedCode);
+    const matched = filteredItems.find((m) => m.name === selectedCode);
     if (!matched) return;
 
     setEditData((prev) => {
@@ -133,13 +141,12 @@ export default function DeliveryDetail({ name }: Props) {
         item_code: matched.name,
         item_name: matched.item_name,
         uom: matched.stock_uom || newItems[index].uom,
-        warehouse: matched.default_warehouse || newItems[index].warehouse,
       };
       return { ...prev, items: newItems };
     });
   };
 
-  // 明細数量変更
+  // 数量変更
   const handleQtyChange = (index: number, qty: number) => {
     setEditData((prev) => {
       if (!prev || !prev.items) return null;
@@ -149,7 +156,7 @@ export default function DeliveryDetail({ name }: Props) {
     });
   };
 
-  // 明細行の削除（配列から消してPUT送信すれば、ERPNext側で自動削除されます）
+  // 行の削除
   const handleRemoveItem = (index: number) => {
     setEditData((prev) => {
       if (!prev || !prev.items) return null;
@@ -157,7 +164,7 @@ export default function DeliveryDetail({ name }: Props) {
     });
   };
 
-  // ERPNextへの保存処理（PUTメソッド）
+  // 保存処理（PUT）
   const handleSave = async () => {
     try {
       setLoading(true);
@@ -172,10 +179,10 @@ export default function DeliveryDetail({ name }: Props) {
         setData(updated);
         setEditData(JSON.parse(JSON.stringify(updated)));
         setIsEditing(false);
-        alert('ERPNextへ変更を保存しました。');
+        alert('変更を正常に保存しました。');
       } else {
         const errJson = await res.json();
-        alert(`保存に失敗しました。:\n${errJson.error || 'エラーが発生しました'}`);
+        alert(`保存に失敗しました。:\n${errJson.error || 'ERPNextの登録制約エラーです'}`);
       }
     } catch (e) {
       console.error(e);
@@ -250,7 +257,9 @@ export default function DeliveryDetail({ name }: Props) {
           <div style={boxHeaderStyle}>【荷主・運送情報】</div>
           <div style={formRowStyle}>
             <label style={labelStyle}>取引先:</label>
-            <span style={valueStyle}>{data.customer_name || data.customer || '-'}</span>
+            <span style={valueStyle}>
+              {data.customer_name || '-'} (コード: {getFormattedCustomerCode(data.customer)})
+            </span>
           </div>
           <div style={formRowStyle}>
             <label style={labelStyle}>出荷日:</label>
@@ -284,7 +293,7 @@ export default function DeliveryDetail({ name }: Props) {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f0f0f0', zIndex: 1 }}>
               <tr style={{ borderBottom: '2px solid #ccc' }}>
-                <th style={{ ...thStyle, width: '200px' }}>商品コード (Item Code)</th>
+                <th style={{ ...thStyle, width: '220px' }}>顧客対応 商品コード</th>
                 <th style={{ ...thStyle, textAlign: 'left' }}>品名</th>
                 <th style={{ ...thStyle, width: '80px', textAlign: 'right' }}>数量</th>
                 {isEditing && <th style={{ ...thStyle, width: '60px' }}>操作</th>}
@@ -293,7 +302,7 @@ export default function DeliveryDetail({ name }: Props) {
             <tbody>
               {(isEditing ? editData.items || [] : data.items || []).map((item, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
-                  {/* 商品コード（セレクトボックス） */}
+                  {/* 取引先コードに完全一致する商品のみセレクトボックスに抽出 */}
                   <td style={tdStyle}>
                     {isEditing ? (
                       <select
@@ -301,9 +310,9 @@ export default function DeliveryDetail({ name }: Props) {
                         onChange={(e) => handleItemSelect(idx, e.target.value)}
                         style={selectStyle}
                       >
-                        {itemMasterList.map((m) => (
+                        {filteredItems.map((m) => (
                           <option key={m.name} value={m.name}>
-                            {m.name}
+                            {m.name} ({m.item_name})
                           </option>
                         ))}
                       </select>
@@ -330,7 +339,7 @@ export default function DeliveryDetail({ name }: Props) {
                     )}
                   </td>
 
-                  {/* 削除 */}
+                  {/* 行削除 */}
                   {isEditing && (
                     <td style={{ ...tdStyle, textAlign: 'center' }}>
                       <button onClick={() => handleRemoveItem(idx)} style={deleteBtnStyle}>
@@ -364,7 +373,7 @@ export default function DeliveryDetail({ name }: Props) {
   );
 }
 
-// --- 以下スタイル定義 ---
+// プレースホルダー表示用スタイル
 const placeholderStyle = {
   display: 'flex',
   alignItems: 'center',
@@ -376,6 +385,7 @@ const placeholderStyle = {
   color: '#666',
   fontSize: 16,
 };
+
 const boxStyle = { border: '1px solid #ddd', borderRadius: 6, padding: '10px', backgroundColor: '#fbfbfb' };
 const boxHeaderStyle = { fontSize: 14, fontWeight: 'bold' as const, color: '#2b579a', marginBottom: 8 };
 const formRowStyle = { display: 'grid', gridTemplateColumns: '80px 1fr', alignItems: 'center', marginBottom: 6, fontSize: 13 };
