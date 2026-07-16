@@ -2,95 +2,127 @@
 
 import React from 'react';
 
-type Props = {
-  leftHeader: React.ReactNode;
-  leftBody: React.ReactNode;
-  rightHeader: React.ReactNode;
-  rightBody: React.ReactNode;
-};
+interface MasterDetailLayoutProps {
+  title: React.ReactNode;
 
-export default function SplitLayout({
-  leftHeader,
-  leftBody,
-  rightHeader,
-  rightBody,
-}: Props) {
+  leftTitle: React.ReactNode;
+  left?: React.ReactNode;
+
+  rightTitle: React.ReactNode;
+  right?: React.ReactNode;
+}
+
+export default function MasterDetailLayout({
+  title,
+  leftTitle,
+  left,
+  rightTitle,
+  right,
+}: MasterDetailLayoutProps) {
   return (
     <div
       style={{
         display: 'flex',
-        gap: 12,
+        flexDirection: 'column',
         height: '100%',
         overflow: 'hidden',
+        gap: 12,
       }}
     >
-      {/* 左 */}
+      {/* ページタイトル */}
       <div
         style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: 0,
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: 6,
+          padding: '8px 4px',
+          fontSize: 20,
+          fontWeight: 'bold',
+          color: '#2b579a',
+          flexShrink: 0,
         }}
       >
-        <div
-          style={{
-            flexShrink: 0,
-            borderBottom: '1px solid #ddd',
-            padding: 12,
-            background: '#fafafa',
-          }}
-        >
-          {leftHeader}
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            minHeight: 0,
-            padding: 8,
-          }}
-        >
-          {leftBody}
-        </div>
+        {title}
       </div>
 
-      {/* 右 */}
+      {/* 左右エリア */}
       <div
         style={{
-          flex: 1,
           display: 'flex',
-          flexDirection: 'column',
+          gap: 12,
+          flex: 1,
           minHeight: 0,
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: 6,
         }}
       >
-        <div
-          style={{
-            flexShrink: 0,
-            borderBottom: '1px solid #ddd',
-            padding: 12,
-            background: '#fafafa',
-          }}
-        >
-          {rightHeader}
-        </div>
-
+        {/* 左 */}
         <div
           style={{
             flex: 1,
-            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
             minHeight: 0,
-            padding: 8,
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            overflow: 'hidden',
           }}
         >
-          {rightBody}
+          <div
+            style={{
+              padding: '12px 16px',
+              background: '#f5f5f5',
+              borderBottom: '1px solid #ddd',
+              fontWeight: 'bold',
+              fontSize: 14,
+              flexShrink: 0,
+            }}
+          >
+            {leftTitle}
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+            }}
+          >
+            {left}
+          </div>
+        </div>
+
+        {/* 右 */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: 0,
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              padding: '12px 16px',
+              background: '#f5f5f5',
+              borderBottom: '1px solid #ddd',
+              fontWeight: 'bold',
+              fontSize: 14,
+              flexShrink: 0,
+            }}
+          >
+            {rightTitle}
+          </div>
+
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+            }}
+          >
+            {right}
+          </div>
         </div>
       </div>
     </div>
