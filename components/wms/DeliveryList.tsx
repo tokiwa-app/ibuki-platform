@@ -1,15 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DeliveryNote } from './WmsPage'; // 親ページから型定義をインポート
+
+type DeliveryNoteRow = {
+  name: string;
+  customer?: string;
+  customer_name?: string;
+  posting_date?: string;
+  custom_delivery_name?: string;
+  custom_delivery_date?: string;
+  transporter_name?: string;
+  status?: string;
+};
 
 type Props = {
   selectedName: string;
-  onSelectData: (data: DeliveryNote) => void;
+  onSelect: (name: string) => void; // 元の「name（文字列）を渡す」イベントに戻します
 };
 
-export default function DeliveryList({ selectedName, onSelectData }: Props) {
-  const [rows, setRows] = useState<DeliveryNote[]>([]);
+export default function DeliveryList({ selectedName, onSelect }: Props) {
+  const [rows, setRows] = useState<DeliveryNoteRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,9 +31,9 @@ export default function DeliveryList({ selectedName, onSelectData }: Props) {
         const list = Array.isArray(data) ? data : [];
         setRows(list);
         
-        // 初回のみ、自動的に一番上の行を選択
+        // 初回ロード時のみ、自動的に一番上の行を選択してIDを親に伝える
         if (list.length > 0 && !selectedName) {
-          onSelectData(list[0]);
+          onSelect(list[0].name);
         }
       } catch (e) {
         console.error(e);
@@ -32,7 +42,8 @@ export default function DeliveryList({ selectedName, onSelectData }: Props) {
       }
     }
     load();
-  }, [onSelectData]);
+    // selectedName は監視しません（左画面の不要な再ロードを防ぐため）
+  }, [onSelect]); 
 
   if (loading) {
     return (
@@ -54,17 +65,15 @@ export default function DeliveryList({ selectedName, onSelectData }: Props) {
         height: '100%',
       }}
     >
-      {/* テーブルヘッダー 
-        比率調整：出荷日(80px) 納期(110px) 取引先(150px) 納品先(150px) 住所(180px固定でコンパクトに) 使用便(残り全て)
-      */}
+      {/* テーブルヘッダー：出荷日、納期、取引先、納品先、住所（細め）、使用便 */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '80px 110px 150px 150px 180px 1fr',
+          gridTemplateColumns: '80px 110px 140px 140px 140px 1fr',
           backgroundColor: '#e6e6e6',
           borderBottom: '2px solid #bbb',
-          padding: '10px 8px',
-          fontSize: 14, // 文字を大きく
+          padding: '12px 8px',
+          fontSize: 14, // 文字サイズ拡大
           fontWeight: 'bold',
           textAlign: 'center',
           boxSizing: 'border-box',
@@ -72,30 +81,29 @@ export default function DeliveryList({ selectedName, onSelectData }: Props) {
       >
         <div>出荷日</div>
         <div>納期</div>
-        <div style={{ textAlign: 'left', paddingLeft: 6 }}>取引先（荷主）</div>
+        <div style={{ textAlign: 'left', paddingLeft: 6 }}>取引先</div>
         <div style={{ textAlign: 'left', paddingLeft: 6 }}>納品先</div>
         <div style={{ textAlign: 'left', paddingLeft: 6 }}>住所</div>
         <div>使用便</div>
       </div>
 
-      {/* スクロール可能なデータ行エリア */}
+      {/* スクロールデータエリア */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {rows.map((row) => {
-          // row.name (ID) を正確に比較して選択状態を判定
           const isSelected = selectedName === row.name;
           return (
             <div
               key={row.name}
-              onClick={() => onSelectData(row)} // クリックした瞬間、親コンポーネントに伝票オブジェクト全体を渡して即時切り替え
+              onClick={() => onSelect(row.name)} // クリックしたID（name）を親に渡す（元の正しい挙動）
               style={{
                 display: 'grid',
-                gridTemplateColumns: '80px 110px 150px 150px 180px 1fr',
+                gridTemplateColumns: '80px 110px 140px 140px 140px 1fr',
                 alignItems: 'center',
-                padding: '10px 8px',
+                padding: '12px 8px', // 余白を広げて文字を押しやすく
                 borderBottom: '1px solid #ddd',
-                fontSize: 13, // 文字を全体的に大きく見やすく
+                fontSize: 14, // 全体的な文字を大きく
                 cursor: 'pointer',
-                backgroundColor: isSelected ? '#b3d1ff' : '#fff', // 選択されたら確実にAccess風の青色に
+                backgroundColor: isSelected ? '#b3d1ff' : '#fff', // 選択時はAccess風の青
                 transition: 'background-color 0.05s',
                 boxSizing: 'border-box',
               }}
@@ -113,7 +121,7 @@ export default function DeliveryList({ selectedName, onSelectData }: Props) {
                 </span>
               </div>
               
-              {/* 3. 取引先名 */}
+              {/* 3. 取引先 */}
               <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 6px' }}>
                 {row.customer_name || row.customer || '-'}
               </div>
@@ -123,9 +131,9 @@ export default function DeliveryList({ selectedName, onSelectData }: Props) {
                 {row.custom_delivery_name || '-'}
               </div>
               
-              {/* 5. 住所 (幅180pxにぎゅっと縮小・はみ出しは綺麗に自動カット) */}
+              {/* 5. 住所 (140px固定幅。途中できれてもいいように省略表示) */}
               <div style={{ color: '#888', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 6px' }}>
-                {row.custom_delivery_address || '-'}
+                {row.custom_delivery_name || '-'} 
               </div>
               
               {/* 6. 使用便 */}
