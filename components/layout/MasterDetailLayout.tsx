@@ -5,18 +5,18 @@ import React from 'react';
 interface MasterDetailLayoutProps {
   title: React.ReactNode;
 
-  leftTitle: React.ReactNode;
-  left: React.ReactNode;
+  titleBackground?: string;
+  titleColor?: string;
 
-  rightTitle: React.ReactNode;
+  left: React.ReactNode;
   right: React.ReactNode;
 }
 
 export default function MasterDetailLayout({
   title,
-  leftTitle,
+  titleBackground = '#2b579a',
+  titleColor = '#fff',
   left,
-  rightTitle,
   right,
 }: MasterDetailLayoutProps) {
   return (
@@ -29,20 +29,22 @@ export default function MasterDetailLayout({
         overflow: 'hidden',
       }}
     >
-      {/* ページタイトル */}
+      {/* タイトルバー */}
       <div
         style={{
-          padding: '4px 2px',
-          fontSize: 22,
+          backgroundColor: titleBackground,
+          color: titleColor,
+          padding: '12px 16px',
+          borderRadius: 8,
+          fontSize: 18,
           fontWeight: 'bold',
-          color: '#2b579a',
           flexShrink: 0,
         }}
       >
         {title}
       </div>
 
-      {/* 左右エリア */}
+      {/* 左右 */}
       <div
         style={{
           display: 'flex',
@@ -55,78 +57,30 @@ export default function MasterDetailLayout({
         <div
           style={{
             flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
+            minWidth: 0,
             minHeight: 0,
+            overflow: 'hidden',
             background: '#fff',
             border: '1px solid #d9d9d9',
             borderRadius: 8,
-            overflow: 'hidden',
           }}
         >
-          {/* ヘッダー */}
-          <div
-            style={{
-              padding: '10px 14px',
-              background: '#f5f5f5',
-              borderBottom: '1px solid #d9d9d9',
-              fontSize: 14,
-              fontWeight: 'bold',
-              flexShrink: 0,
-            }}
-          >
-            {leftTitle}
-          </div>
-
-          {/* 本文 */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              minHeight: 0,
-            }}
-          >
-            {left}
-          </div>
+          {left}
         </div>
 
         {/* 右 */}
         <div
           style={{
             flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
+            minWidth: 0,
             minHeight: 0,
+            overflow: 'hidden',
             background: '#fff',
             border: '1px solid #d9d9d9',
             borderRadius: 8,
-            overflow: 'hidden',
           }}
         >
-          {/* ヘッダー */}
-          <div
-            style={{
-              padding: '10px 14px',
-              background: '#f5f5f5',
-              borderBottom: '1px solid #d9d9d9',
-              fontSize: 14,
-              fontWeight: 'bold',
-              flexShrink: 0,
-            }}
-          >
-            {rightTitle}
-          </div>
-
-          {/* 本文 */}
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              minHeight: 0,
-            }}
-          >
-            {right}
-          </div>
+          {right}
         </div>
       </div>
     </div>
