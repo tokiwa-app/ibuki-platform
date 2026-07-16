@@ -8,14 +8,16 @@ type DeliveryNoteRow = {
   customer_name?: string;
   posting_date?: string;
   custom_delivery_name?: string;
+  custom_delivery_address?: string; // 住所を正しくマッピング
   custom_delivery_date?: string;
+  custom_delivery_time?: string;
   transporter_name?: string;
   status?: string;
 };
 
 type Props = {
   selectedName: string;
-  onSelect: (name: string) => void; // 元の「name（文字列）を渡す」イベントに戻します
+  onSelect: (name: string) => void;
 };
 
 export default function DeliveryList({ selectedName, onSelect }: Props) {
@@ -31,7 +33,7 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
         const list = Array.isArray(data) ? data : [];
         setRows(list);
         
-        // 初回ロード時のみ、自動的に一番上の行を選択してIDを親に伝える
+        // 初回ロード時、選択されているIDがなければ、一番上の行を自動選択
         if (list.length > 0 && !selectedName) {
           onSelect(list[0].name);
         }
@@ -42,8 +44,7 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
       }
     }
     load();
-    // selectedName は監視しません（左画面の不要な再ロードを防ぐため）
-  }, [onSelect]); 
+  }, [onSelect]); // selectedNameを外して、左画面の不要な再ロード（無限ループ）を防止
 
   if (loading) {
     return (
@@ -65,7 +66,9 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
         height: '100%',
       }}
     >
-      {/* テーブルヘッダー：出荷日、納期、取引先、納品先、住所（細め）、使用便 */}
+      {/* テーブルヘッダー 
+        比率：出荷日(80px) 納期(110px) 取引先(140px) 納品先(140px) 住所(140px固定) 使用便(残り全て)
+      */}
       <div
         style={{
           display: 'grid',
@@ -73,7 +76,7 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
           backgroundColor: '#e6e6e6',
           borderBottom: '2px solid #bbb',
           padding: '12px 8px',
-          fontSize: 14, // 文字サイズ拡大
+          fontSize: 14,
           fontWeight: 'bold',
           textAlign: 'center',
           boxSizing: 'border-box',
@@ -90,20 +93,21 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
       {/* スクロールデータエリア */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {rows.map((row) => {
+          // row.name (ID) を親の selectedName と確実に比較
           const isSelected = selectedName === row.name;
           return (
             <div
               key={row.name}
-              onClick={() => onSelect(row.name)} // クリックしたID（name）を親に渡す（元の正しい挙動）
+              onClick={() => onSelect(row.name)} // クリック時に親の setSelectedName(ID) が100%正しく走ります
               style={{
                 display: 'grid',
                 gridTemplateColumns: '80px 110px 140px 140px 140px 1fr',
                 alignItems: 'center',
-                padding: '12px 8px', // 余白を広げて文字を押しやすく
+                padding: '12px 8px',
                 borderBottom: '1px solid #ddd',
-                fontSize: 14, // 全体的な文字を大きく
+                fontSize: 14, // 文字をハッキリ大きく
                 cursor: 'pointer',
-                backgroundColor: isSelected ? '#b3d1ff' : '#fff', // 選択時はAccess風の青
+                backgroundColor: isSelected ? '#b3d1ff' : '#fff', // 選択されている行が青くなります
                 transition: 'background-color 0.05s',
                 boxSizing: 'border-box',
               }}
@@ -131,9 +135,9 @@ export default function DeliveryList({ selectedName, onSelect }: Props) {
                 {row.custom_delivery_name || '-'}
               </div>
               
-              {/* 5. 住所 (140px固定幅。途中できれてもいいように省略表示) */}
+              {/* 5. 住所 (140px幅に固定され、長い場合は自動で「…」とスマートに省略されます) */}
               <div style={{ color: '#888', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', padding: '0 6px' }}>
-                {row.custom_delivery_name || '-'} 
+                {row.custom_delivery_address || '-'} 
               </div>
               
               {/* 6. 使用便 */}
