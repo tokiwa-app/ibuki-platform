@@ -39,7 +39,7 @@ export default function ReceiptDetail({ name, onSaveSuccess }: ReceiptDetailProp
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/resource/Purchase Receipt/${name}`);
+        const res = await fetch(`/api/wms/purchase-receipt/${name}`);
         const data = await res.json();
         if (data.data) {
           setSupplier(data.data.supplier);
