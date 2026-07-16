@@ -25,7 +25,7 @@ export default function MasterDetailLayout({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        gap: 12,
+        minHeight: 0,
         overflow: 'hidden',
       }}
     >
@@ -38,6 +38,7 @@ export default function MasterDetailLayout({
           borderRadius: 8,
           fontSize: 18,
           fontWeight: 'bold',
+          marginBottom: 12,
           flexShrink: 0,
         }}
       >
@@ -51,12 +52,15 @@ export default function MasterDetailLayout({
           flex: 1,
           gap: 12,
           minHeight: 0,
+          overflow: 'hidden', // ★重要
         }}
       >
         {/* 左 */}
         <div
           style={{
             flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
             minWidth: 0,
             minHeight: 0,
             overflow: 'hidden',
@@ -72,6 +76,8 @@ export default function MasterDetailLayout({
         <div
           style={{
             flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
             minWidth: 0,
             minHeight: 0,
             overflow: 'hidden',
