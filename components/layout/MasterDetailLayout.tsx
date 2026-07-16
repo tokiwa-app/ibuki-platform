@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-interface MasterDetailLayoutProps {
+interface Props {
   title: React.ReactNode;
   titleBackground?: string;
   titleColor?: string;
@@ -16,27 +16,24 @@ export default function MasterDetailLayout({
   titleColor = '#fff',
   left,
   right,
-}: MasterDetailLayoutProps) {
+}: Props) {
   return (
     <div
       style={{
-        width: '100%',
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        height: '100%',
       }}
     >
       <div
         style={{
-          backgroundColor: titleBackground,
+          background: titleBackground,
           color: titleColor,
           padding: '12px 16px',
           borderRadius: 8,
-          fontSize: 18,
-          fontWeight: 'bold',
-          flexShrink: 0,
           marginBottom: 12,
+          fontWeight: 'bold',
+          fontSize: 18,
         }}
       >
         {title}
@@ -44,19 +41,14 @@ export default function MasterDetailLayout({
 
       <div
         style={{
+          display: 'flex',
           flex: 1,
-          minHeight: 0,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
           gap: 12,
-          overflow: 'hidden',
         }}
       >
         <div
           style={{
-            minWidth: 0,
-            minHeight: 0,
-            overflow: 'hidden',
+            flex: 1,
           }}
         >
           {left}
@@ -64,9 +56,7 @@ export default function MasterDetailLayout({
 
         <div
           style={{
-            minWidth: 0,
-            minHeight: 0,
-            overflow: 'hidden',
+            flex: 1,
           }}
         >
           {right}
