@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+
+import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import DeliveryDetail from '../../../components/wms/DeliveryDetail';
 import DeliveryList from '../../../components/wms/DeliveryList';
 
@@ -30,39 +32,81 @@ export default function WmsPage() {
           alignItems: 'center',
           boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
           zIndex: 10,
+          flexShrink: 0,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 'bold' }}>出庫一覧・詳細（WMS）</h1>
-          <div style={{ fontSize: 13, backgroundColor: '#1e3f73', padding: '4px 8px', borderRadius: 4 }}>
-            期間: 2026/06/05 〜 2026/08/14
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 16,
+          }}
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 'bold',
+            }}
+          >
+            出庫一覧・詳細（WMS）
+          </h1>
+
+          <div
+            style={{
+              fontSize: 13,
+              backgroundColor: '#1e3f73',
+              padding: '4px 8px',
+              borderRadius: 4,
+            }}
+          >
+            期間: 2026/06/05 ～ 2026/08/14
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+          }}
+        >
           <button style={buttonStyle}>佐川CSV取込</button>
-          <button style={buttonStyle}>大和(本日出荷)</button>
-          <button style={{ ...buttonStyle, backgroundColor: '#d9534f' }}>終了</button>
+          <button style={buttonStyle}>ヤマト（本日出荷）</button>
+          <button
+            style={{
+              ...buttonStyle,
+              backgroundColor: '#d9534f',
+              color: '#fff',
+            }}
+          >
+            終了
+          </button>
         </div>
       </header>
 
-      {/* メインエリア（50:50等分割） */}
+      {/* メイン */}
       <div
         style={{
           flex: 1,
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: 12,
           padding: 12,
           overflow: 'hidden',
+          minHeight: 0,
         }}
       >
-        {/* 【ここを確実に修正！】onSelect={setSelectedName} で正しいID連携に。 */}
-        <DeliveryList 
-          selectedName={selectedName} 
-          onSelect={setSelectedName} 
-        />
-        <DeliveryDetail 
-          name={selectedName} 
+        <MasterDetailLayout
+          leftTitle="出庫一覧"
+          rightTitle="出庫詳細"
+          left={
+            <DeliveryList
+              selectedName={selectedName}
+              onSelect={setSelectedName}
+            />
+          }
+          right={
+            <DeliveryDetail
+              name={selectedName}
+            />
+          }
         />
       </div>
     </main>
