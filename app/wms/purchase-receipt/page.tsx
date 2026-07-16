@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import ReceiptList from '../../components/wms/ReceiptList';
-import ReceiptDetail from '../../components/wms/ReceiptDetail';
+import ReceiptList from '../../../components/wms/ReceiptList';
+import ReceiptDetail from '../../../components/wms/ReceiptDetail';
 
 export default function PurchaseReceiptPage() {
   const [selectedName, setSelectedName] = useState(''); // 選択されたPR（入庫）のID
