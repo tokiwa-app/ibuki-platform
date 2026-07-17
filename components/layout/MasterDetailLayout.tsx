@@ -22,39 +22,43 @@ export default function MasterDetailLayout({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh', // 画面いっぱいに固定
-        width: '100vw',
-        overflow: 'hidden', // 全体のスクロールを禁止
-        boxSizing: 'border-box',
-        padding: 0,
-        margin: 0,
+        height: '100%',
       }}
     >
-      <header
+      <div
         style={{
           background: titleBackground,
           color: titleColor,
-          padding: '8px 12px', // 余白最小化
-          fontSize: '16px',
+          padding: '12px 16px',
+          borderRadius: 8,
+          marginBottom: 12,
           fontWeight: 'bold',
-          flexShrink: 0, // ヘッダーサイズ固定
+          fontSize: 18,
         }}
       >
         {title}
-      </header>
+      </div>
 
       <div
         style={{
           display: 'flex',
           flex: 1,
-          gap: 0, // 左右間の隙間なし
-          minHeight: 0, // 重要: flex内スクロール制御
+          gap: 12,
         }}
       >
-        <div style={{ flex: '0 0 400px', overflowY: 'auto' }}>
+        <div
+          style={{
+            flex: 1,
+          }}
+        >
           {left}
         </div>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+
+        <div
+          style={{
+            flex: 1,
+          }}
+        >
           {right}
         </div>
       </div>
