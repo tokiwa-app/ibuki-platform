@@ -22,11 +22,15 @@ export default function MasterDetailLayout({
       style={{
         display: 'flex',
         flexDirection: 'column',
+        width: '100%',
         height: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
       }}
     >
       <div
         style={{
+          flexShrink: 0,
           background: titleBackground,
           color: titleColor,
           padding: '12px 16px',
@@ -43,12 +47,17 @@ export default function MasterDetailLayout({
         style={{
           display: 'flex',
           flex: 1,
+          minHeight: 0,
+          overflow: 'hidden',
           gap: 12,
         }}
       >
         <div
           style={{
             flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: 'hidden',
           }}
         >
           {left}
@@ -57,6 +66,9 @@ export default function MasterDetailLayout({
         <div
           style={{
             flex: 1,
+            minWidth: 0,
+            minHeight: 0,
+            overflow: 'hidden',
           }}
         >
           {right}
