@@ -12,7 +12,6 @@ export default function WmsPage() {
   return (
     <main
       style={{
-        height: '100vh',
         padding: 12,
         backgroundColor: '#f3f4f6',
         overflow: 'hidden',
