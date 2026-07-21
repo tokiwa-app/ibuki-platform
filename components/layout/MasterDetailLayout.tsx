@@ -65,21 +65,25 @@ export default function MasterDetailLayout({
           overflow: 'hidden',
         }}
       >
+        {/* 左側：独立スクロール */}
         <section
           style={{
             minWidth: 0,
             minHeight: 0,
-            overflow: 'hidden',
+            overflowY: 'auto',
+            overflowX: 'hidden',
           }}
         >
           {left}
         </section>
 
+        {/* 右側：独立スクロール */}
         <section
           style={{
             minWidth: 0,
             minHeight: 0,
-            overflow: 'hidden',
+            overflowY: 'auto',
+            overflowX: 'hidden',
           }}
         >
           {right}
