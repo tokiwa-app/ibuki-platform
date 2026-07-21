@@ -53,7 +53,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif', minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <main style={{ padding: 32, fontFamily: 'system-ui, sans-serif',  backgroundColor: '#f9fafb' }}>
       <header style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0, color: '#111827' }}>

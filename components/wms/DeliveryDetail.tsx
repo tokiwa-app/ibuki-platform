@@ -193,19 +193,24 @@ export default function DeliveryDetail({ name }: Props) {
   };
 
   return (
-    <section
-      style={{
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        border: '1px solid #ccc',
-        padding: 14,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        height: '100%',
-        overflowY: 'auto',
-      }}
-    >
+<section
+  style={{
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    border: '1px solid #ccc',
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+
+    width: '100%',
+    minWidth: 0,
+    minHeight: 0,
+    boxSizing: 'border-box',
+
+    overflowY: 'auto',
+  }}
+>
       {/* 操作ヘッダーバー */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #2b579a', paddingBottom: 8 }}>
         <span style={{ fontSize: 16, fontWeight: 'bold', color: '#2b579a' }}>
