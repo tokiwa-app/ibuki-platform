@@ -20,59 +20,70 @@ export default function MasterDetailLayout({
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
         width: '100%',
         height: '100%',
         minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
         overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
-      <div
+      {/* タイトル */}
+      <header
         style={{
           flexShrink: 0,
-          background: titleBackground,
-          color: titleColor,
           padding: '12px 16px',
-          borderRadius: 8,
-          marginBottom: 12,
-          fontWeight: 'bold',
-          fontSize: 18,
+          backgroundColor: titleBackground,
+          color: titleColor,
+          display: 'flex',
+          alignItems: 'center',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          zIndex: 10,
         }}
       >
-        {title}
-      </div>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 18,
+            fontWeight: 'bold',
+          }}
+        >
+          {title}
+        </h1>
+      </header>
 
+      {/* 左右エリア */}
       <div
         style={{
-          display: 'flex',
           flex: 1,
           minHeight: 0,
-          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
           gap: 12,
+          paddingTop: 12,
+          overflow: 'hidden',
         }}
       >
-        <div
+        <section
           style={{
-            flex: 1,
             minWidth: 0,
             minHeight: 0,
             overflow: 'hidden',
           }}
         >
           {left}
-        </div>
+        </section>
 
-        <div
+        <section
           style={{
-            flex: 1,
             minWidth: 0,
             minHeight: 0,
             overflow: 'hidden',
           }}
         >
           {right}
-        </div>
+        </section>
       </div>
     </div>
   );
