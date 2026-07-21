@@ -1,4 +1,3 @@
-```tsx
 'use client';
 
 import { useState } from 'react';
@@ -21,7 +20,6 @@ export default function PurchaseReceiptPage() {
       style={{
         position: 'fixed',
         inset: 0,
-        padding: 12,
         backgroundColor: '#f3f4f6',
         overflow: 'hidden',
         boxSizing: 'border-box',
@@ -48,4 +46,3 @@ export default function PurchaseReceiptPage() {
     </main>
   );
 }
-```
