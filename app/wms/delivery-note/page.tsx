@@ -12,8 +12,8 @@ export default function WmsPage() {
   return (
     <main
       style={{
-        width: '100%',
-        height: '100vh',
+        position: 'fixed',
+        inset: 0,
         padding: 12,
         backgroundColor: '#f3f4f6',
         overflow: 'hidden',
@@ -30,11 +30,7 @@ export default function WmsPage() {
             onSelect={setSelectedName}
           />
         }
-        right={
-          <DeliveryDetail
-            name={selectedName}
-          />
-        }
+        right={<DeliveryDetail name={selectedName} />}
       />
     </main>
   );
