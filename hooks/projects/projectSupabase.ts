@@ -5,32 +5,37 @@ import {
 } from './useProjects';
 
 
+
 export async function getProjects(
   projectType: string
 ) {
-  let query = supabase
-    .from('projects')
-    .select('*')
-    .order(
-      'updated_at',
-      {
-        ascending: false,
-      }
-    );
+
+  let query =
+    supabase
+      .from('projects')
+      .select('*')
+      .order(
+        'updated_at',
+        {
+          ascending: false,
+        }
+      );
 
 
   if (projectType.trim()) {
-    query = query.eq(
-      'project_type',
-      projectType.trim()
-    );
+    query =
+      query.eq(
+        'project_type',
+        projectType.trim()
+      );
   }
 
 
   const {
     data,
     error,
-  } = await query;
+  } =
+    await query;
 
 
   if (error) {
@@ -40,6 +45,7 @@ export async function getProjects(
 
   return (data ?? []) as Project[];
 }
+
 
 
 
@@ -54,6 +60,7 @@ export async function insertProject(
     await supabase
       .from('projects')
       .insert({
+
         project_name:
           input.project_name,
 
@@ -96,17 +103,15 @@ export async function insertProject(
         is_active:
           input.is_active ?? true,
 
+
+        // 新方式
         erp_sync_status:
-          input.erp_sync_status ?? 'pending',
+          'pending',
 
-        erp_synced_at:
-          input.erp_synced_at,
-
-        erp_project_id:
-          input.erp_project_id,
       })
       .select()
       .single();
+
 
 
   if (error) {
@@ -116,6 +121,8 @@ export async function insertProject(
 
   return data as Project;
 }
+
+
 
 
 
@@ -137,6 +144,7 @@ export async function updateProject(
     await supabase
       .from('projects')
       .update({
+
         project_name:
           input.project_name,
 
@@ -179,14 +187,10 @@ export async function updateProject(
         is_active:
           input.is_active,
 
-        erp_project_id:
-          input.erp_project_id,
 
         erp_sync_status:
-          input.erp_sync_status,
+          'pending',
 
-        erp_synced_at:
-          input.erp_synced_at,
       })
       .eq(
         'id',
@@ -196,47 +200,11 @@ export async function updateProject(
       .single();
 
 
+
   if (error) {
     throw error;
   }
 
 
   return data as Project;
-}
-
-
-
-export async function updateERPInfo(
-  id: number,
-  data: {
-    erp_project_id: string;
-    erp_sync_status: string;
-    erp_synced_at: string;
-  }
-) {
-
-  const {
-    error,
-  } =
-    await supabase
-      .from('projects')
-      .update({
-        erp_project_id:
-          data.erp_project_id,
-
-        erp_sync_status:
-          data.erp_sync_status,
-
-        erp_synced_at:
-          data.erp_synced_at,
-      })
-      .eq(
-        'id',
-        id
-      );
-
-
-  if (error) {
-    throw error;
-  }
 }
