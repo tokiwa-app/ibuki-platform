@@ -118,22 +118,7 @@ export default function ProjectList({
           {projectType}一覧
         </h3>
 
-        <button
-          type="button"
-          onClick={() => onSelect(null)}
-          style={{
-            padding: '4px 8px',
-            backgroundColor: '#2e7d32',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            fontSize: 12,
-            fontWeight: 'bold',
-            cursor: 'pointer',
-          }}
-        >
-          ＋ 新規作成
-        </button>
+
       </div>
 
       <div
@@ -291,6 +276,42 @@ export default function ProjectList({
                 </div>
               );
             })}
+<div
+  onClick={() => onSelect(null)}
+  style={{
+    padding: 12,
+    borderRadius: 4,
+    border: '2px dashed #bdbdbd',
+    backgroundColor: '#fafafa',
+    cursor: 'pointer',
+    textAlign: 'center',
+    transition: 'all 0.15s ease',
+  }}
+>
+  <div
+    style={{
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: '#2e7d32',
+      lineHeight: 1,
+    }}
+  >
+    ＋
+  </div>
+
+  <div
+    style={{
+      marginTop: 6,
+      fontSize: 13,
+      fontWeight: 'bold',
+      color: '#555',
+    }}
+  >
+    新規を追加
+  </div>
+</div>
+
+            
           </div>
         )}
       </div>
