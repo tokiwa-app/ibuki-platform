@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient';
+
 import {
   Project,
   SaveProjectInput,
@@ -23,11 +24,13 @@ export async function getProjects(
 
 
   if (projectType.trim()) {
+
     query =
       query.eq(
         'project_type',
         projectType.trim()
       );
+
   }
 
 
@@ -44,7 +47,9 @@ export async function getProjects(
 
 
   return (data ?? []) as Project[];
+
 }
+
 
 
 
@@ -52,6 +57,11 @@ export async function getProjects(
 export async function insertProject(
   input: SaveProjectInput
 ) {
+
+
+  // ======================
+  // ① Supabaseへ新規保存
+  // ======================
 
   const {
     data,
@@ -64,49 +74,62 @@ export async function insertProject(
         project_name:
           input.project_name,
 
+
         customer:
           input.customer,
+
 
         company:
           input.company,
 
+
         project_type:
           input.project_type,
+
 
         status:
           input.status,
 
+
         priority:
           input.priority,
+
 
         expected_start_date:
           input.expected_start_date,
 
+
         expected_end_date:
           input.expected_end_date,
+
 
         actual_start_date:
           input.actual_start_date,
 
+
         actual_end_date:
           input.actual_end_date,
+
 
         percent_complete:
           input.percent_complete ?? 0,
 
+
         collect_progress:
           input.collect_progress ?? false,
 
+
         notes:
           input.notes,
+
 
         is_active:
           input.is_active ?? true,
 
 
-        // 新方式
         erp_sync_status:
           'pending',
+
 
       })
       .select()
@@ -119,8 +142,54 @@ export async function insertProject(
   }
 
 
-  return data as Project;
+
+  // ======================
+  // ② Ibuki ID生成
+  // I-00000001
+  // ======================
+
+  const projectId =
+    `I-${String(data.id).padStart(8, '0')}`;
+
+
+
+
+
+  // ======================
+  // ③ project_id保存
+  // ======================
+
+  const {
+    data: updated,
+    error: updateError,
+  } =
+    await supabase
+      .from('projects')
+      .update({
+
+        project_id:
+          projectId,
+
+      })
+      .eq(
+        'id',
+        data.id
+      )
+      .select()
+      .single();
+
+
+
+  if (updateError) {
+    throw updateError;
+  }
+
+
+
+  return updated as Project;
+
 }
+
 
 
 
@@ -130,11 +199,15 @@ export async function updateProject(
   input: SaveProjectInput
 ) {
 
+
   if (!input.id) {
+
     throw new Error(
       'Project ID is required'
     );
+
   }
+
 
 
   const {
@@ -148,48 +221,63 @@ export async function updateProject(
         project_name:
           input.project_name,
 
+
         customer:
           input.customer,
+
 
         company:
           input.company,
 
+
         project_type:
           input.project_type,
+
 
         status:
           input.status,
 
+
         priority:
           input.priority,
+
 
         expected_start_date:
           input.expected_start_date,
 
+
         expected_end_date:
           input.expected_end_date,
+
 
         actual_start_date:
           input.actual_start_date,
 
+
         actual_end_date:
           input.actual_end_date,
+
 
         percent_complete:
           input.percent_complete,
 
+
         collect_progress:
           input.collect_progress,
 
+
         notes:
           input.notes,
+
 
         is_active:
           input.is_active,
 
 
+        // 同期待ち
         erp_sync_status:
           'pending',
+
 
       })
       .eq(
@@ -206,5 +294,7 @@ export async function updateProject(
   }
 
 
+
   return data as Project;
+
 }
