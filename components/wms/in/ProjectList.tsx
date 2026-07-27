@@ -15,59 +15,58 @@ export default function ProjectList({
     loading,
     error,
     saveProject,
-    deleteProject,
   } = useProjects(projectType);
 
   return (
     <div
-style={{
-  width: '100%',
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-}}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
     >
       <div
         style={{
-          padding: 12,
-          borderBottom: '1px solid #eee',
+          display: 'grid',
+          gridTemplateColumns: '70px 120px 120px 1fr',
+          gap: 8,
+          padding: '8px 12px',
           fontWeight: 'bold',
+          borderBottom: '1px solid #ddd',
         }}
       >
-        {projectType}一覧
+        <div>操作</div>
+        <div>開始予定日</div>
+        <div>荷主</div>
+        <div>プロジェクト名</div>
       </div>
 
       <div
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
         }}
       >
         {loading && <div>読込中...</div>}
 
         {error && (
-          <div style={{ color: 'red' }}>
+          <div style={{ color: 'red', padding: 8 }}>
             {error}
           </div>
         )}
 
-        {!loading &&
-          projects.map((project) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              projectType={projectType}
-              onSave={saveProject}
-              onDelete={deleteProject}
-            />
-          ))}
+        {projects.map((project) => (
+          <ProjectCard
+            key={project.id}
+            project={project}
+            projectType={projectType}
+            onSave={saveProject}
+          />
+        ))}
 
+        {/* 常に表示する新規入力行 */}
         <ProjectCard
-          isNew
           projectType={projectType}
           onSave={saveProject}
         />
