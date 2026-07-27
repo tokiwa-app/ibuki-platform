@@ -7,27 +7,44 @@ export interface Project {
   id: number;
   erp_project_id: string | null;
   project_name: string;
-  project_type: string;
   customer: string | null;
   company: string | null;
+  project_type: string;
   status: string | null;
   priority: string | null;
   expected_start_date: string | null;
   expected_end_date: string | null;
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+  percent_complete: number | null;
+  collect_progress: boolean | null;
+  notes: string | null;
+  is_active: boolean | null;
+  erp_sync_status: string | null;
+  erp_synced_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface SaveProjectInput {
   id?: number;
+  erp_project_id?: string | null;
   project_name: string;
-  project_type: string;
   customer: string | null;
   company: string | null;
+  project_type: string;
   status: string | null;
   priority: string | null;
   expected_start_date: string | null;
   expected_end_date: string | null;
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+  percent_complete: number | null;
+  collect_progress: boolean | null;
+  notes: string | null;
+  is_active: boolean | null;
+  erp_sync_status: string | null;
+  erp_synced_at: string | null;
 }
 
 export function useProjects(projectType: string) {
@@ -53,11 +70,13 @@ export function useProjects(projectType: string) {
 
       if (error) throw error;
 
-      setProjects(data ?? []);
+      setProjects((data ?? []) as Project[]);
     } catch (e) {
       console.error(e);
       setError(
-        e instanceof Error ? e.message : '取得に失敗しました',
+        e instanceof Error
+          ? e.message
+          : '取得に失敗しました'
       );
     } finally {
       setLoading(false);
@@ -73,16 +92,23 @@ export function useProjects(projectType: string) {
       const { error } = await supabase
         .from('projects')
         .update({
+          erp_project_id: input.erp_project_id,
           project_name: input.project_name,
-          project_type: input.project_type,
           customer: input.customer,
           company: input.company,
+          project_type: input.project_type,
           status: input.status,
           priority: input.priority,
-          expected_start_date:
-            input.expected_start_date,
-          expected_end_date:
-            input.expected_end_date,
+          expected_start_date: input.expected_start_date,
+          expected_end_date: input.expected_end_date,
+          actual_start_date: input.actual_start_date,
+          actual_end_date: input.actual_end_date,
+          percent_complete: input.percent_complete,
+          collect_progress: input.collect_progress,
+          notes: input.notes,
+          is_active: input.is_active,
+          erp_sync_status: input.erp_sync_status,
+          erp_synced_at: input.erp_synced_at,
         })
         .eq('id', input.id);
 
@@ -91,31 +117,27 @@ export function useProjects(projectType: string) {
       const { error } = await supabase
         .from('projects')
         .insert({
+          erp_project_id: input.erp_project_id,
           project_name: input.project_name,
-          project_type: input.project_type,
           customer: input.customer,
           company: input.company,
+          project_type: input.project_type,
           status: input.status,
           priority: input.priority,
-          expected_start_date:
-            input.expected_start_date,
-          expected_end_date:
-            input.expected_end_date,
+          expected_start_date: input.expected_start_date,
+          expected_end_date: input.expected_end_date,
+          actual_start_date: input.actual_start_date,
+          actual_end_date: input.actual_end_date,
+          percent_complete: input.percent_complete,
+          collect_progress: input.collect_progress,
+          notes: input.notes,
+          is_active: input.is_active,
+          erp_sync_status: input.erp_sync_status,
+          erp_synced_at: input.erp_synced_at,
         });
 
       if (error) throw error;
     }
-
-    await fetchProjects();
-  }
-
-  async function deleteProject(id: number) {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
 
     await fetchProjects();
   }
@@ -126,6 +148,5 @@ export function useProjects(projectType: string) {
     error,
     fetchProjects,
     saveProject,
-    deleteProject,
   };
 }
