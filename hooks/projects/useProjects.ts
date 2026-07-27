@@ -6,11 +6,13 @@ import {
   useState,
 } from 'react';
 
+
 import {
   getProjects,
   insertProject,
   updateProject,
 } from './projectSupabase';
+
 
 import {
   syncERPProject,
@@ -18,11 +20,12 @@ import {
 
 
 
+
 export interface Project {
 
   id: number;
 
-  project_id: string;
+  project_id: string | null;
 
   project_name: string;
 
@@ -31,6 +34,7 @@ export interface Project {
   company: string | null;
 
   project_type: string;
+
 
   status: string | null;
 
@@ -71,12 +75,13 @@ export interface Project {
 
 
 
+
 export interface SaveProjectInput {
 
   id?: number;
 
 
-  project_id?: string;
+  project_id?: string | null;
 
 
   project_name: string;
@@ -124,9 +129,11 @@ export interface SaveProjectInput {
 
 
 
+
 export function useProjects(
   projectType: string
 ) {
+
 
   const [
     projects,
@@ -146,6 +153,7 @@ export function useProjects(
     error,
     setError,
   ] = useState('');
+
 
 
 
@@ -172,6 +180,7 @@ export function useProjects(
         setProjects(
           data
         );
+
 
 
       } catch (e) {
@@ -203,6 +212,7 @@ export function useProjects(
 
 
 
+
   useEffect(() => {
 
 
@@ -217,12 +227,15 @@ export function useProjects(
 
 
 
+
+
   async function saveProject(
     input: SaveProjectInput
   ) {
 
 
     let project: Project;
+
 
 
 
@@ -256,6 +269,36 @@ export function useProjects(
 
 
     // =========================
+    // デバッグ
+    // =========================
+
+    console.log(
+      "PROJECT BEFORE ERP",
+      project
+    );
+
+
+
+    console.log(
+      "ERP SEND DATA",
+      {
+
+        project_id:
+          project.project_id,
+
+        project_name:
+          project.project_name,
+
+      }
+    );
+
+
+
+
+
+
+
+    // =========================
     // ② ERPNext同期
     // =========================
 
@@ -263,7 +306,7 @@ export function useProjects(
     await syncERPProject({
 
       project_id:
-        project.project_id,
+        project.project_id!,
 
 
       project_name:
@@ -303,6 +346,9 @@ export function useProjects(
 
 
 
+
+
+
     // =========================
     // ③ 同期状態更新
     // =========================
@@ -328,10 +374,12 @@ export function useProjects(
 
 
 
+
     await fetchProjects();
 
 
   }
+
 
 
 
