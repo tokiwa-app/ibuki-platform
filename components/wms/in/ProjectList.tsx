@@ -61,12 +61,14 @@ export default function ProjectList({
             <ProjectCard
               key={project.id}
               project={project}
+              projectType={projectType}
               onSave={saveProject}
               onDelete={deleteProject}
             />
           ))}
 
-        <ProjectCreateCard
+        <ProjectCard
+          isNew
           projectType={projectType}
           onSave={saveProject}
         />
