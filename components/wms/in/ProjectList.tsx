@@ -1,7 +1,7 @@
 'use client';
 
 import ProjectCard from './ProjectCard';
-import { useProjects } from '../../../hooks/useProjects';
+import { useProjects } from '../../../hooks/projects/useProjects';
 
 interface ProjectListProps {
   projectType: string;
