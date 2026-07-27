@@ -3,15 +3,16 @@ import { supabase } from '../../lib/supabaseClient';
 
 export async function syncERPProject(
   data: {
-    project_id: string;
+    id: number;
 
     project_name: string;
 
-    status?: string | null;
+    status: string | null;
 
-    priority?: string | null;
+    priority: string | null;
   }
 ) {
+
 
   const {
     data: result,
