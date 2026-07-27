@@ -113,31 +113,102 @@ export function useProjects(projectType: string) {
         .eq('id', input.id);
 
       if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('projects')
-        .insert({
-          erp_project_id: input.erp_project_id,
-          project_name: input.project_name,
-          customer: input.customer,
-          company: input.company,
-          project_type: input.project_type,
-          status: input.status,
-          priority: input.priority,
-          expected_start_date: input.expected_start_date,
-          expected_end_date: input.expected_end_date,
-          actual_start_date: input.actual_start_date,
-          actual_end_date: input.actual_end_date,
-          percent_complete: input.percent_complete,
-          collect_progress: input.collect_progress,
-          notes: input.notes,
-          is_active: input.is_active,
-          erp_sync_status: input.erp_sync_status,
-          erp_synced_at: input.erp_synced_at,
-        });
-
-      if (error) throw error;
+} else {
+  // ERPNextへ新規Project作成
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sync-project`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization:
+          `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        project_name:
+          input.project_name,
+      }),
     }
+  );
+
+
+  const result = await response.json();
+
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ??
+        'ERP同期に失敗しました'
+    );
+  }
+
+
+  const erpProjectId =
+    result.data?.name ?? null;
+
+
+  // ERP ID取得後にSupabase保存
+  const { error } =
+    await supabase
+      .from('projects')
+      .insert({
+        erp_project_id:
+          erpProjectId,
+
+        project_name:
+          input.project_name,
+
+        customer:
+          input.customer,
+
+        company:
+          input.company,
+
+        project_type:
+          input.project_type,
+
+        status:
+          result.data?.status ??
+          input.status,
+
+        priority:
+          result.data?.priority ??
+          input.priority,
+
+        expected_start_date:
+          input.expected_start_date,
+
+        expected_end_date:
+          input.expected_end_date,
+
+        actual_start_date:
+          input.actual_start_date,
+
+        actual_end_date:
+          input.actual_end_date,
+
+        percent_complete:
+          input.percent_complete ?? 0,
+
+        collect_progress:
+          input.collect_progress ?? false,
+
+        notes:
+          input.notes,
+
+        is_active:
+          input.is_active ?? true,
+
+        erp_sync_status:
+          'synced',
+
+        erp_synced_at:
+          new Date().toISOString(),
+      });
+
+
+  if (error) throw error;
+}
 
     await fetchProjects();
   }
