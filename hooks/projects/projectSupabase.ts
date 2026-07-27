@@ -149,7 +149,7 @@ export async function insertProject(
   // ======================
 
   const projectId =
-    `I-${String(data.id).padStart(8, '0')}`;
+    `I${String(data.id).padStart(8, '0')}`;
 
 
 
