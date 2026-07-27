@@ -1,90 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../../../lib/supabaseClient';
-
-interface Project {
-  id: number;
-  erp_project_id: string | null;
-  project_name: string;
-  project_type: string;
-  customer: string | null;
-  company: string | null;
-  status: string | null;
-  priority: string | null;
-  expected_start_date: string | null;
-  expected_end_date: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import ProjectCard from './ProjectCard';
+import ProjectCreateCard from './ProjectCreateCard';
+import { useProjects } from '@/hooks/useProjects';
 
 interface ProjectListProps {
   selectedId: number | null;
   onSelect: (id: number | null) => void;
-  refreshTrigger: number;
   projectType: string;
 }
 
 export default function ProjectList({
   selectedId,
   onSelect,
-  refreshTrigger,
   projectType,
 }: ProjectListProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    async function fetchProjects() {
-      setLoading(true);
-      setError('');
-
-      try {
-        let query = supabase
-          .from('projects')
-          .select('*')
-          .order('updated_at', { ascending: false });
-
-        const normalizedProjectType = projectType?.trim();
-
-        if (normalizedProjectType) {
-          query = query.eq(
-            'project_type',
-            normalizedProjectType,
-          );
-        }
-
-        const { data, error: supabaseError } =
-          await query;
-
-        if (supabaseError) {
-          throw supabaseError;
-        }
-
-        setProjects(data ?? []);
-
-        console.log('Projects:', data);
-      } catch (err: unknown) {
-        console.error(
-          '案件一覧の取得に失敗しました',
-          err,
-        );
-
-        setProjects([]);
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : '案件一覧の取得に失敗しました',
-        );
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void fetchProjects();
-  }, [refreshTrigger, projectType]);
+  const {
+    projects,
+    loading,
+    error,
+    saveProject,
+  } = useProjects(projectType);
 
   return (
     <div
@@ -103,9 +39,6 @@ export default function ProjectList({
           padding: '12px 16px',
           borderBottom: '1px solid #eee',
           backgroundColor: '#fafafa',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
         }}
       >
         <h3
@@ -117,8 +50,6 @@ export default function ProjectList({
         >
           {projectType}一覧
         </h3>
-
-
       </div>
 
       <div
@@ -133,7 +64,6 @@ export default function ProjectList({
             style={{
               padding: 16,
               textAlign: 'center',
-              color: '#666',
             }}
           >
             読込中...
@@ -142,21 +72,11 @@ export default function ProjectList({
           <div
             style={{
               padding: 16,
-              textAlign: 'center',
               color: '#c62828',
+              textAlign: 'center',
             }}
           >
             {error}
-          </div>
-        ) : projects.length === 0 ? (
-          <div
-            style={{
-              padding: 16,
-              textAlign: 'center',
-              color: '#999',
-            }}
-          >
-            案件がありません
           </div>
         ) : (
           <div
@@ -166,152 +86,19 @@ export default function ProjectList({
               gap: 6,
             }}
           >
-            {projects.map((project) => {
-              const isSelected =
-                project.id === selectedId;
+            {projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                selected={project.id === selectedId}
+                onClick={() => onSelect(project.id)}
+              />
+            ))}
 
-              return (
-                <div
-                  key={project.id}
-                  onClick={() =>
-                    onSelect(project.id)
-                  }
-                  style={{
-                    padding: 12,
-                    borderRadius: 4,
-                    border: isSelected
-                      ? '1.5px solid #2e7d32'
-                      : '1px solid #e0e0e0',
-                    backgroundColor: isSelected
-                      ? '#e8f5e9'
-                      : '#fff',
-                    cursor: 'pointer',
-                    transition: 'all 0.1s ease',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      marginBottom: 4,
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        fontWeight: 'bold',
-                        fontSize: 13,
-                        color: isSelected
-                          ? '#1b5e20'
-                          : '#333',
-                      }}
-                    >
-                      {project.project_name}
-                    </span>
-
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: 11,
-                        color: '#888',
-                      }}
-                    >
-                      {project.expected_start_date ??
-                        ''}
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginBottom: 4,
-                      fontSize: 11,
-                      color: '#777',
-                    }}
-                  >
-                    ERP Project ID:{' '}
-                    <strong>
-                      {project.erp_project_id ??
-                        '未連携'}
-                    </strong>
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                      fontSize: 12,
-                      color: '#555',
-                    }}
-                  >
-                    <span
-                      style={{
-                        minWidth: 0,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      荷主:{' '}
-                      <strong>
-                        {project.customer ??
-                          '未設定'}
-                      </strong>
-                    </span>
-
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: 11,
-                        color: '#777',
-                      }}
-                    >
-                      {project.status ?? ''}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-<div
-  onClick={() => onSelect(null)}
-  style={{
-    padding: 12,
-    borderRadius: 4,
-    border: '2px dashed #bdbdbd',
-    backgroundColor: '#fafafa',
-    cursor: 'pointer',
-    textAlign: 'center',
-    transition: 'all 0.15s ease',
-  }}
->
-  <div
-    style={{
-      fontSize: 28,
-      fontWeight: 'bold',
-      color: '#2e7d32',
-      lineHeight: 1,
-    }}
-  >
-    ＋
-  </div>
-
-  <div
-    style={{
-      marginTop: 6,
-      fontSize: 13,
-      fontWeight: 'bold',
-      color: '#555',
-    }}
-  >
-    新規を追加
-  </div>
-</div>
-
-            
+            <ProjectCreateCard
+              projectType={projectType}
+              onSave={saveProject}
+            />
           </div>
         )}
       </div>
