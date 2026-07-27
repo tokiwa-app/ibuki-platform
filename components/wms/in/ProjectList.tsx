@@ -20,13 +20,12 @@ export default function ProjectList({
 
   return (
     <div
-      style={{
-        width: 340,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        background: '#fff',
-      }}
+style={{
+  width: '100%',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+}}
     >
       <div
         style={{
