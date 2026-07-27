@@ -29,42 +29,9 @@ export interface Project {
 
   project_name: string;
 
-  customer: string | null;
-
-  company: string | null;
-
-  project_type: string;
-
-
   status: string | null;
 
   priority: string | null;
-
-
-  expected_start_date: string | null;
-
-  expected_end_date: string | null;
-
-
-  actual_start_date: string | null;
-
-  actual_end_date: string | null;
-
-
-  percent_complete: number | null;
-
-  collect_progress: boolean | null;
-
-
-  notes: string | null;
-
-  is_active: boolean | null;
-
-
-  erp_sync_status: string | null;
-
-  erp_synced_at: string | null;
-
 
   created_at: string;
 
@@ -80,49 +47,11 @@ export interface SaveProjectInput {
 
   id?: number;
 
-
-  project_id?: string | null;
-
-
   project_name: string;
-
-
-  customer: string | null;
-
-  company: string | null;
-
-
-  project_type: string;
-
 
   status: string | null;
 
   priority: string | null;
-
-
-  expected_start_date: string | null;
-
-  expected_end_date: string | null;
-
-
-  actual_start_date: string | null;
-
-  actual_end_date: string | null;
-
-
-  percent_complete: number | null;
-
-  collect_progress: boolean | null;
-
-
-  notes: string | null;
-
-  is_active: boolean | null;
-
-
-  erp_sync_status?: string | null;
-
-  erp_synced_at?: string | null;
 
 }
 
@@ -130,9 +59,8 @@ export interface SaveProjectInput {
 
 
 
-export function useProjects(
-  projectType: string
-) {
+
+export function useProjects() {
 
 
   const [
@@ -158,6 +86,8 @@ export function useProjects(
 
 
 
+
+
   const fetchProjects =
     useCallback(async () => {
 
@@ -172,13 +102,11 @@ export function useProjects(
 
 
         const data =
-          await getProjects(
-            projectType
-          );
+          await getProjects();
 
 
         setProjects(
-          data
+          data as Project[]
         );
 
 
@@ -192,7 +120,7 @@ export function useProjects(
         setError(
           e instanceof Error
             ? e.message
-            : '取得に失敗しました'
+            : '取得失敗'
         );
 
 
@@ -205,9 +133,9 @@ export function useProjects(
       }
 
 
-    }, [
-      projectType,
-    ]);
+    }, []);
+
+
 
 
 
@@ -215,13 +143,13 @@ export function useProjects(
 
   useEffect(() => {
 
-
     void fetchProjects();
-
 
   }, [
     fetchProjects,
   ]);
+
+
 
 
 
@@ -238,10 +166,9 @@ export function useProjects(
 
 
 
-
-    // =========================
-    // ① Supabase保存
-    // =========================
+    // =====================
+    // Supabase保存
+    // =====================
 
 
     if (!input.id) {
@@ -250,7 +177,7 @@ export function useProjects(
       project =
         await insertProject(
           input
-        );
+        ) as Project;
 
 
     } else {
@@ -259,7 +186,7 @@ export function useProjects(
       project =
         await updateProject(
           input
-        );
+        ) as Project;
 
 
     }
@@ -268,107 +195,36 @@ export function useProjects(
 
 
 
-    // =========================
-    // デバッグ
-    // =========================
 
-    console.log(
-      "PROJECT BEFORE ERP",
-      project
-    );
+    // =====================
+    // ERPNext同期
+    // =====================
 
 
+    if (project.project_id) {
 
-    console.log(
-      "ERP SEND DATA",
-      {
+
+      await syncERPProject({
 
         project_id:
           project.project_id,
 
+
         project_name:
           project.project_name,
 
-      }
-    );
+
+        status:
+          project.status,
 
 
+        priority:
+          project.priority,
+
+      });
 
 
-
-
-
-    // =========================
-    // ② ERPNext同期
-    // =========================
-
-
-    await syncERPProject({
-
-      project_id:
-        project.project_id!,
-
-
-      project_name:
-        project.project_name,
-
-
-      status:
-        project.status,
-
-
-      priority:
-        project.priority,
-
-
-      expected_start_date:
-        project.expected_start_date,
-
-
-      expected_end_date:
-        project.expected_end_date,
-
-
-      percent_complete:
-        project.percent_complete,
-
-
-      collect_progress:
-        project.collect_progress,
-
-
-      notes:
-        project.notes,
-
-    });
-
-
-
-
-
-
-
-
-    // =========================
-    // ③ 同期状態更新
-    // =========================
-
-
-    await updateProject({
-
-      ...project,
-
-
-      erp_sync_status:
-        'synced',
-
-
-      erp_synced_at:
-        new Date()
-          .toISOString(),
-
-
-    });
+    }
 
 
 
@@ -376,7 +232,6 @@ export function useProjects(
 
 
     await fetchProjects();
-
 
   }
 
@@ -388,6 +243,7 @@ export function useProjects(
 
   return {
 
+
     projects,
 
     loading,
@@ -398,6 +254,8 @@ export function useProjects(
 
     saveProject,
 
+
   };
+
 
 }
