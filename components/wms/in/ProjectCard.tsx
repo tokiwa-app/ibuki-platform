@@ -87,13 +87,12 @@ export default function ProjectCard({
       return (
         <div
           onClick={() => setEditing(true)}
-          style={{
-            padding: 16,
-            border: '2px dashed #bbb',
-            borderRadius: 4,
-            cursor: 'pointer',
-            textAlign: 'center',
-          }}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
         >
           <div style={{ fontSize: 28 }}>＋</div>
           <div>新規案件を追加</div>
