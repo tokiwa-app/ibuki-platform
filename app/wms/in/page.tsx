@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import ReceiptDetail from '../../../components/wms/ReceiptDetail';
-import ReceiptList from '../../../components/wms/ReceiptList';
+import ReceiptList from '../../../components/wms/in/ProjectList';
 
 export default function PurchaseReceiptPage() {
   const [selectedName, setSelectedName] = useState('');
