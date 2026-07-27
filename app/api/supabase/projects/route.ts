@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../../../lib/supabaseServer';
+import { supabaseAdmin } from '../../../../lib/supabaseClient';
 
 export const dynamic = 'force-dynamic';
 
