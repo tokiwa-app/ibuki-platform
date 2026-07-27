@@ -204,24 +204,21 @@ export function useProjects() {
     if (project.project_id) {
 
 
-      await syncERPProject({
+await syncERPProject({
 
-        project_id:
-          project.project_id,
+  id:
+    project.id,
 
+  project_name:
+    project.project_name,
 
-        project_name:
-          project.project_name,
+  status:
+    project.status,
 
+  priority:
+    project.priority,
 
-        status:
-          project.status,
-
-
-        priority:
-          project.priority,
-
-      });
+});
 
 
     }
