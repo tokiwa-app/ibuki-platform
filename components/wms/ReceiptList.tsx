@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 interface Project {
   id: number;
@@ -21,8 +22,6 @@ interface ProjectListProps {
   selectedId: number | null;
   onSelect: (id: number | null) => void;
   refreshTrigger: number;
-
-  // 入庫案件、出庫案件などを呼び出し側から渡す
   projectType: string;
 }
 
@@ -42,35 +41,35 @@ export default function ProjectList({
       setError('');
 
       try {
-        const params = new URLSearchParams();
+        let query = supabase
+          .from('projects')
+          .select('*')
+          .order('updated_at', { ascending: false });
 
-        if (projectType.trim()) {
-          params.set('project_type', projectType.trim());
-        }
+        const normalizedProjectType = projectType?.trim();
 
-        const res = await fetch(
-          `/api/supabase/projects?${params.toString()}`,
-          {
-            method: 'GET',
-            cache: 'no-store',
-          },
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(
-            data?.error || '案件一覧の取得に失敗しました',
+        if (normalizedProjectType) {
+          query = query.eq(
+            'project_type',
+            normalizedProjectType,
           );
         }
 
-        const list = Array.isArray(data) ? data : [];
+        const { data, error: supabaseError } =
+          await query;
 
-        setProjects(list);
+        if (supabaseError) {
+          throw supabaseError;
+        }
 
-        console.log('Projects:', list);
+        setProjects(data ?? []);
+
+        console.log('Projects:', data);
       } catch (err: unknown) {
-        console.error('案件一覧の取得に失敗しました', err);
+        console.error(
+          '案件一覧の取得に失敗しました',
+          err,
+        );
 
         setProjects([]);
 
@@ -183,12 +182,15 @@ export default function ProjectList({
             }}
           >
             {projects.map((project) => {
-              const isSelected = project.id === selectedId;
+              const isSelected =
+                project.id === selectedId;
 
               return (
                 <div
                   key={project.id}
-                  onClick={() => onSelect(project.id)}
+                  onClick={() =>
+                    onSelect(project.id)
+                  }
                   style={{
                     padding: 12,
                     borderRadius: 4,
@@ -233,7 +235,8 @@ export default function ProjectList({
                         color: '#888',
                       }}
                     >
-                      {project.expected_start_date || ''}
+                      {project.expected_start_date ??
+                        ''}
                     </span>
                   </div>
 
@@ -246,7 +249,8 @@ export default function ProjectList({
                   >
                     ERP Project ID:{' '}
                     <strong>
-                      {project.erp_project_id || '未連携'}
+                      {project.erp_project_id ??
+                        '未連携'}
                     </strong>
                   </div>
 
@@ -269,7 +273,8 @@ export default function ProjectList({
                     >
                       荷主:{' '}
                       <strong>
-                        {project.customer || '未設定'}
+                        {project.customer ??
+                          '未設定'}
                       </strong>
                     </span>
 
@@ -280,7 +285,7 @@ export default function ProjectList({
                         color: '#777',
                       }}
                     >
-                      {project.status || ''}
+                      {project.status ?? ''}
                     </span>
                   </div>
                 </div>
