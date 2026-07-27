@@ -2,17 +2,15 @@
 
 import ProjectCard from './ProjectCard';
 import ProjectCreateCard from './ProjectCreateCard';
-import { useProjects } from '../../../hooks/useProjects';
+import ProjectEditor from './ProjectEditor';
+import { useProjects, Project } from '@/hooks/useProjects';
+import { useState } from 'react';
 
 interface ProjectListProps {
-  selectedId: number | null;
-  onSelect: (id: number | null) => void;
   projectType: string;
 }
 
 export default function ProjectList({
-  selectedId,
-  onSelect,
   projectType,
 }: ProjectListProps) {
   const {
@@ -20,87 +18,112 @@ export default function ProjectList({
     loading,
     error,
     saveProject,
+    deleteProject,
   } = useProjects(projectType);
+
+  const [selectedProject, setSelectedProject] =
+    useState<Project | null>(null);
+
+  const [isCreating, setIsCreating] =
+    useState(false);
+
+  function handleNew() {
+    setSelectedProject(null);
+    setIsCreating(true);
+  }
+
+  function handleSelect(project: Project) {
+    setSelectedProject(project);
+    setIsCreating(false);
+  }
+
+  function handleClose() {
+    setSelectedProject(null);
+    setIsCreating(false);
+  }
 
   return (
     <div
       style={{
-        backgroundColor: '#fff',
-        borderRadius: 6,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
         display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
         height: '100%',
+        background: '#fff',
       }}
     >
+      {/* 左 */}
       <div
         style={{
-          padding: '12px 16px',
-          borderBottom: '1px solid #eee',
-          backgroundColor: '#fafafa',
+          width: 340,
+          borderRight: '1px solid #eee',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        <h3
+        <div
           style={{
-            margin: 0,
-            fontSize: 14,
+            padding: 12,
+            borderBottom: '1px solid #eee',
             fontWeight: 'bold',
           }}
         >
           {projectType}一覧
-        </h3>
-      </div>
+        </div>
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: 8,
-        }}
-      >
-        {loading ? (
-          <div
-            style={{
-              padding: 16,
-              textAlign: 'center',
-            }}
-          >
-            読込中...
-          </div>
-        ) : error ? (
-          <div
-            style={{
-              padding: 16,
-              color: '#c62828',
-              textAlign: 'center',
-            }}
-          >
-            {error}
-          </div>
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-            }}
-          >
-            {projects.map((project) => (
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          {loading && <div>読込中...</div>}
+
+          {error && (
+            <div style={{ color: 'red' }}>
+              {error}
+            </div>
+          )}
+
+          {!loading &&
+            projects.map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}
-                selected={project.id === selectedId}
-                onClick={() => onSelect(project.id)}
+                selected={
+                  selectedProject?.id === project.id
+                }
+                onClick={() =>
+                  handleSelect(project)
+                }
               />
             ))}
 
-            <ProjectCreateCard
-              projectType={projectType}
-              onSave={saveProject}
-            />
-          </div>
-        )}
+          <ProjectCreateCard
+            projectType={projectType}
+            onSave={saveProject}
+            onClick={handleNew}
+          />
+        </div>
+      </div>
+
+      {/* 右 */}
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto',
+        }}
+      >
+        <ProjectEditor
+          projectType={projectType}
+          project={selectedProject}
+          isCreating={isCreating}
+          onSave={saveProject}
+          onDelete={deleteProject}
+          onCancel={handleClose}
+        />
       </div>
     </div>
   );
