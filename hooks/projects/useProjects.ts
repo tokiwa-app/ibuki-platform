@@ -7,11 +7,6 @@ import {
 } from 'react';
 
 import {
-  Project,
-  SaveProjectInput,
-} from './types';
-
-import {
   getProjects,
   insertProject,
   updateProject,
@@ -24,10 +19,70 @@ import {
 } from './projectERP';
 
 
+export interface Project {
+  id: number;
+  erp_project_id: string | null;
+  project_name: string;
+  customer: string | null;
+  company: string | null;
+  project_type: string;
+
+  status: string | null;
+  priority: string | null;
+
+  expected_start_date: string | null;
+  expected_end_date: string | null;
+
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+
+  percent_complete: number | null;
+  collect_progress: boolean | null;
+
+  notes: string | null;
+  is_active: boolean | null;
+
+  erp_sync_status: string | null;
+  erp_synced_at: string | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+
+export interface SaveProjectInput {
+  id?: number;
+
+  erp_project_id?: string | null;
+
+  project_name: string;
+  customer: string | null;
+  company: string | null;
+  project_type: string;
+
+  status: string | null;
+  priority: string | null;
+
+  expected_start_date: string | null;
+  expected_end_date: string | null;
+
+  actual_start_date: string | null;
+  actual_end_date: string | null;
+
+  percent_complete: number | null;
+  collect_progress: boolean | null;
+
+  notes: string | null;
+  is_active: boolean | null;
+
+  erp_sync_status: string | null;
+  erp_synced_at: string | null;
+}
+
+
 export function useProjects(
   projectType: string
 ) {
-
   const [projects, setProjects] =
     useState<Project[]>([]);
 
@@ -72,7 +127,6 @@ export function useProjects(
     }, [projectType]);
 
 
-
   useEffect(() => {
 
     void fetchProjects();
@@ -88,12 +142,14 @@ export function useProjects(
     // 新規
     if (!input.id) {
 
-      // ① Supabase保存
+      // Supabase保存
       const project =
-        await insertProject(input);
+        await insertProject(
+          input
+        );
 
 
-      // ② ERP作成
+      // ERPNext作成
       const erp =
         await createERPProject(
           project.project_name
@@ -104,7 +160,7 @@ export function useProjects(
         erp?.data?.name;
 
 
-      // ③ ERP情報だけ更新
+      // ERP IDだけSupabaseへ反映
       if (erpProjectId) {
 
         await updateERPInfo(
@@ -127,48 +183,50 @@ export function useProjects(
 
     } else {
 
-      // ① Supabase更新
+      // Supabase更新
       await updateProject(
         input
       );
 
 
-      // ② ERP更新
+      // ERPNext更新
       if (
         input.erp_project_id
       ) {
 
-        await updateERPProject({
-          erp_project_id:
-            input.erp_project_id,
+        await updateERPProject(
+          {
+            erp_project_id:
+              input.erp_project_id,
 
-          project_name:
-            input.project_name,
+            project_name:
+              input.project_name,
 
-          company:
-            input.company,
+            company:
+              input.company,
 
-          status:
-            input.status,
+            status:
+              input.status,
 
-          priority:
-            input.priority,
+            priority:
+              input.priority,
 
-          expected_start_date:
-            input.expected_start_date,
+            expected_start_date:
+              input.expected_start_date,
 
-          expected_end_date:
-            input.expected_end_date,
+            expected_end_date:
+              input.expected_end_date,
 
-          percent_complete:
-            input.percent_complete,
+            percent_complete:
+              input.percent_complete,
 
-          collect_progress:
-            input.collect_progress,
+            collect_progress:
+              input.collect_progress,
 
-          notes:
-            input.notes,
-        });
+            notes:
+              input.notes,
+          }
+        );
 
       }
 
@@ -176,7 +234,6 @@ export function useProjects(
 
 
     await fetchProjects();
-
   }
 
 
@@ -188,5 +245,4 @@ export function useProjects(
     fetchProjects,
     saveProject,
   };
-
 }
