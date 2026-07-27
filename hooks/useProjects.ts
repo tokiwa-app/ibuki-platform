@@ -115,40 +115,29 @@ export function useProjects(projectType: string) {
       if (error) throw error;
 } else {
   // ERPNextへ新規Project作成
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/sync-project`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization:
-          `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
-        project_name:
-          input.project_name,
-      }),
-    }
-  );
-
-
-  const result = await response.json();
-
-
-  if (!response.ok) {
-    throw new Error(
-      result.error ??
-        'ERP同期に失敗しました'
+  const { data, error } =
+    await supabase.functions.invoke(
+      'sync-project',
+      {
+        body: {
+          project_name:
+            input.project_name,
+        },
+      }
     );
+
+
+  if (error) {
+    throw error;
   }
 
 
   const erpProjectId =
-    result.data?.name ?? null;
+    data?.data?.name ?? null;
 
 
   // ERP ID取得後にSupabase保存
-  const { error } =
+  const { error: insertError } =
     await supabase
       .from('projects')
       .insert({
@@ -168,11 +157,11 @@ export function useProjects(projectType: string) {
           input.project_type,
 
         status:
-          result.data?.status ??
+          data?.data?.status ??
           input.status,
 
         priority:
-          result.data?.priority ??
+          data?.data?.priority ??
           input.priority,
 
         expected_start_date:
@@ -207,9 +196,10 @@ export function useProjects(projectType: string) {
       });
 
 
-  if (error) throw error;
+  if (insertError) {
+    throw insertError;
+  }
 }
-
     await fetchProjects();
   }
 
