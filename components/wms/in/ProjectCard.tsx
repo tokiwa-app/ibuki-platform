@@ -150,6 +150,8 @@ erp_project_id:
       });
 
       setEditing(false);
+    }
+      
 catch (e) {
   console.error(e);
 
