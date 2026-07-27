@@ -25,8 +25,6 @@ export default function PurchaseReceiptPage() {
         titleColor="#fff"
         left={
           <ProjectList
-            selectedId={selectedId}
-            onSelect={setSelectedId}
             projectType="入庫案件"
           />
         }
