@@ -1,4 +1,5 @@
-import { supabaseAdmin } from '../../../../lib/supabaseClient';
+import { createSupabaseServerClient } from
+  '../../../../lib/supabaseServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,31 +17,59 @@ type ProjectPostBody = {
 };
 
 // -------------------------------------------------------------
-// GET: SupabaseからProjectを検索
+// GET: SupabaseからProjectを取得
 //
-// /api/projects
-// /api/projects?project_type=入庫案件
-// /api/projects?project_type=入庫案件&q=ABC
-// /api/projects?id=1
+// GET /api/supabase/projects
+// GET /api/supabase/projects?project_type=入庫案件
+// GET /api/supabase/projects?project_type=入庫案件&q=ABC
+// GET /api/supabase/projects?id=1
 // -------------------------------------------------------------
 export async function GET(request: Request) {
   try {
+    const supabase = createSupabaseServerClient();
+
+    // ログイン確認
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return Response.json(
+        {
+          error: 'ログインが必要です',
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
-    const id = searchParams.get('id')?.trim();
-    const projectType =
-      searchParams.get('project_type')?.trim();
-    const q = searchParams.get('q')?.trim();
+    const id =
+      searchParams.get('id')?.trim() || '';
 
-    const limit = parseLimit(searchParams.get('limit'));
+    const projectType =
+      searchParams.get('project_type')?.trim() || '';
+
+    const q =
+      searchParams.get('q')?.trim() || '';
+
+    const limit = parseLimit(
+      searchParams.get('limit'),
+    );
 
     // ---------------------------------------------------------
-    // ID指定による1件取得
+    // Supabase ID指定による1件取得
     // ---------------------------------------------------------
     if (id) {
       const projectId = Number(id);
 
-      if (!Number.isInteger(projectId) || projectId <= 0) {
+      if (
+        !Number.isInteger(projectId) ||
+        projectId <= 0
+      ) {
         return Response.json(
           {
             error: 'idが正しくありません',
@@ -51,34 +80,34 @@ export async function GET(request: Request) {
         );
       }
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('id', projectId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return Response.json(
-            {
-              error: 'プロジェクトが見つかりません',
-            },
-            {
-              status: 404,
-            },
-          );
-        }
-
         throw error;
+      }
+
+      if (!data) {
+        return Response.json(
+          {
+            error: 'プロジェクトが見つかりません',
+          },
+          {
+            status: 404,
+          },
+        );
       }
 
       return Response.json(data);
     }
 
     // ---------------------------------------------------------
-    // 一覧検索
+    // 一覧取得
     // ---------------------------------------------------------
-    let query = supabaseAdmin
+    let query = supabase
       .from('projects')
       .select(
         `
@@ -104,20 +133,26 @@ export async function GET(request: Request) {
       })
       .limit(limit);
 
+    // Project Typeが指定された場合のみ絞り込む
     if (projectType) {
-      query = query.eq('project_type', projectType);
+      query = query.eq(
+        'project_type',
+        projectType,
+      );
     }
 
+    // キーワード検索
     if (q) {
-      const escapedKeyword = escapePostgrestSearch(q);
+      const keyword =
+        escapePostgrestSearch(q);
 
       query = query.or(
         [
-          `project_name.ilike.%${escapedKeyword}%`,
-          `erp_project_id.ilike.%${escapedKeyword}%`,
-          `customer.ilike.%${escapedKeyword}%`,
-          `company.ilike.%${escapedKeyword}%`,
-          `status.ilike.%${escapedKeyword}%`,
+          `project_name.ilike.%${keyword}%`,
+          `erp_project_id.ilike.%${keyword}%`,
+          `customer.ilike.%${keyword}%`,
+          `company.ilike.%${keyword}%`,
+          `status.ilike.%${keyword}%`,
         ].join(','),
       );
     }
@@ -130,7 +165,10 @@ export async function GET(request: Request) {
 
     return Response.json(data || []);
   } catch (error: unknown) {
-    console.error('Projects GET error:', error);
+    console.error(
+      'Projects GET error:',
+      error,
+    );
 
     return Response.json(
       {
@@ -149,15 +187,37 @@ export async function GET(request: Request) {
 // -------------------------------------------------------------
 // POST: SupabaseにProjectを作成
 //
-// ERPNextへのProject作成とは分離する
+// RLSポリシーはログインユーザーに対して適用される
 // -------------------------------------------------------------
 export async function POST(request: Request) {
   try {
+    const supabase = createSupabaseServerClient();
+
+    // ログイン確認
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return Response.json(
+        {
+          error: 'ログインが必要です',
+        },
+        {
+          status: 401,
+        },
+      );
+    }
+
     const body =
       (await request.json()) as ProjectPostBody;
 
-    const projectName = body.project_name?.trim();
-    const projectType = body.project_type?.trim();
+    const projectName =
+      body.project_name?.trim() || '';
+
+    const projectType =
+      body.project_type?.trim() || '';
 
     if (!projectName) {
       return Response.json(
@@ -181,18 +241,42 @@ export async function POST(request: Request) {
       );
     }
 
-    const payload = {
-      erp_project_id:
-        body.erp_project_id?.trim() || null,
+    if (
+      body.expected_start_date &&
+      body.expected_end_date &&
+      body.expected_start_date >
+        body.expected_end_date
+    ) {
+      return Response.json(
+        {
+          error:
+            '終了予定日は開始予定日以降にしてください',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
+    const erpProjectId =
+      body.erp_project_id?.trim() || null;
+
+    const payload = {
+      erp_project_id: erpProjectId,
       project_name: projectName,
       project_type: projectType,
 
-      customer: body.customer?.trim() || null,
-      company: body.company?.trim() || null,
+      customer:
+        body.customer?.trim() || null,
 
-      status: body.status?.trim() || 'Open',
-      priority: body.priority?.trim() || null,
+      company:
+        body.company?.trim() || null,
+
+      status:
+        body.status?.trim() || 'Open',
+
+      priority:
+        body.priority?.trim() || null,
 
       expected_start_date:
         body.expected_start_date || null,
@@ -200,20 +284,24 @@ export async function POST(request: Request) {
       expected_end_date:
         body.expected_end_date || null,
 
-      notes: body.notes?.trim() || null,
+      notes:
+        body.notes?.trim() || null,
 
       is_active: true,
 
-      erp_sync_status: body.erp_project_id
+      erp_sync_status: erpProjectId
         ? 'synced'
         : 'pending',
 
-      erp_synced_at: body.erp_project_id
+      erp_synced_at: erpProjectId
         ? new Date().toISOString()
         : null,
+
+      // projectsテーブルにcreated_by列がある場合のみ使用
+      // created_by: user.id,
     };
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('projects')
       .insert(payload)
       .select('*')
@@ -227,7 +315,10 @@ export async function POST(request: Request) {
       status: 201,
     });
   } catch (error: unknown) {
-    console.error('Projects POST error:', error);
+    console.error(
+      'Projects POST error:',
+      error,
+    );
 
     return Response.json(
       {
@@ -243,17 +334,34 @@ export async function POST(request: Request) {
   }
 }
 
-function parseLimit(value: string | null): number {
+// -------------------------------------------------------------
+// limit変換
+// -------------------------------------------------------------
+function parseLimit(
+  value: string | null,
+): number {
+  if (!value) {
+    return 100;
+  }
+
   const parsed = Number(value);
 
-  if (!Number.isInteger(parsed) || parsed <= 0) {
+  if (
+    !Number.isInteger(parsed) ||
+    parsed <= 0
+  ) {
     return 100;
   }
 
   return Math.min(parsed, 500);
 }
 
-function escapePostgrestSearch(value: string): string {
+// -------------------------------------------------------------
+// PostgREST検索文字列のエスケープ
+// -------------------------------------------------------------
+function escapePostgrestSearch(
+  value: string,
+): string {
   return value
     .replaceAll('\\', '\\\\')
     .replaceAll('%', '\\%')
@@ -263,21 +371,34 @@ function escapePostgrestSearch(value: string): string {
     .replaceAll(')', '\\)');
 }
 
+// -------------------------------------------------------------
+// エラーメッセージ取得
+// -------------------------------------------------------------
 function getErrorMessage(
   error: unknown,
   fallback: string,
 ): string {
-  if (error instanceof Error && error.message) {
+  if (
+    error instanceof Error &&
+    error.message
+  ) {
     return error.message;
   }
 
   if (
     typeof error === 'object' &&
     error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
+    'message' in error
   ) {
-    return error.message;
+    const message = (
+      error as {
+        message?: unknown;
+      }
+    ).message;
+
+    if (typeof message === 'string') {
+      return message;
+    }
   }
 
   return fallback;
