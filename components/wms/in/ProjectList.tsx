@@ -3,7 +3,7 @@
 import ProjectCard from './ProjectCard';
 import ProjectCreateCard from './ProjectCreateCard';
 import ProjectEditor from './ProjectEditor';
-import { useProjects, Project } from '@/hooks/useProjects';
+import { useProjects, Project } from '../../../hooks/useProjects';
 import { useState } from 'react';
 
 interface ProjectListProps {
