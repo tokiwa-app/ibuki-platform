@@ -125,6 +125,8 @@ export function useProjects(projectType: string) {
         },
       }
     );
+console.log('ERP FUNCTION DATA', data);
+console.log('ERP FUNCTION ERROR', error);
 
 
   if (error) {
