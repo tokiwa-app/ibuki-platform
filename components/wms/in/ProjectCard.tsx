@@ -1,108 +1,204 @@
 'use client';
 
-import React from 'react';
-import { Project } from '@/hooks/useProjects';
+import React, { useState } from 'react';
+import { SaveProjectInput } from '@/hooks/useProjects';
 
-interface ProjectCardProps {
-  project: Project;
-  selected: boolean;
-  onClick: () => void;
+interface ProjectCreateCardProps {
+  projectType: string;
+  onSave: (data: SaveProjectInput) => Promise<void>;
+  onClick?: () => void;
 }
 
-export default function ProjectCard({
-  project,
-  selected,
+export default function ProjectCreateCard({
+  projectType,
+  onSave,
   onClick,
-}: ProjectCardProps) {
+}: ProjectCreateCardProps) {
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [projectName, setProjectName] = useState('');
+  const [customer, setCustomer] = useState('');
+  const [company, setCompany] = useState('');
+  const [status, setStatus] = useState('Open');
+  const [priority, setPriority] = useState('Medium');
+  const [expectedStartDate, setExpectedStartDate] =
+    useState('');
+  const [expectedEndDate, setExpectedEndDate] =
+    useState('');
+
+  function startEdit() {
+    setEditing(true);
+    onClick?.();
+  }
+
+  async function handleSave() {
+    if (!projectName.trim()) {
+      alert('案件名を入力してください');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      await onSave({
+        project_name: projectName,
+        project_type: projectType,
+        customer: customer || null,
+        company: company || null,
+        status,
+        priority,
+        expected_start_date:
+          expectedStartDate || null,
+        expected_end_date:
+          expectedEndDate || null,
+      });
+
+      setProjectName('');
+      setCustomer('');
+      setCompany('');
+      setStatus('Open');
+      setPriority('Medium');
+      setExpectedStartDate('');
+      setExpectedEndDate('');
+
+      setEditing(false);
+    } catch (e) {
+      console.error(e);
+      alert('保存に失敗しました');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancel() {
+    setEditing(false);
+
+    setProjectName('');
+    setCustomer('');
+    setCompany('');
+    setStatus('Open');
+    setPriority('Medium');
+    setExpectedStartDate('');
+    setExpectedEndDate('');
+  }
+
+  if (!editing) {
+    return (
+      <div
+        onClick={startEdit}
+        style={{
+          padding: 16,
+          border: '2px dashed #bdbdbd',
+          borderRadius: 4,
+          background: '#fafafa',
+          cursor: 'pointer',
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            fontSize: 28,
+            color: '#2e7d32',
+            fontWeight: 'bold',
+            lineHeight: 1,
+          }}
+        >
+          ＋
+        </div>
+
+        <div
+          style={{
+            marginTop: 6,
+            fontWeight: 'bold',
+          }}
+        >
+          新規案件を追加
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      onClick={onClick}
       style={{
-        padding: 12,
+        padding: 16,
+        border: '1px solid #2e7d32',
         borderRadius: 4,
-        border: selected
-          ? '1.5px solid #2e7d32'
-          : '1px solid #e0e0e0',
-        backgroundColor: selected ? '#e8f5e9' : '#fff',
-        cursor: 'pointer',
-        transition: 'all .15s ease',
+        background: '#fff',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 4,
-          gap: 12,
-        }}
-      >
-        <span
-          style={{
-            fontWeight: 'bold',
-            fontSize: 13,
-            color: selected ? '#1b5e20' : '#333',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {project.project_name}
-        </span>
+      <div style={{ marginBottom: 10 }}>
+        <div>案件名</div>
+        <input
+          value={projectName}
+          onChange={(e) =>
+            setProjectName(e.target.value)
+          }
+          style={{ width: '100%' }}
+        />
+      </div>
 
-        <span
-          style={{
-            fontSize: 11,
-            color: '#888',
-            flexShrink: 0,
-          }}
-        >
-          {project.expected_start_date ?? ''}
-        </span>
+      <div style={{ marginBottom: 10 }}>
+        <div>荷主</div>
+        <input
+          value={customer}
+          onChange={(e) =>
+            setCustomer(e.target.value)
+          }
+          style={{ width: '100%' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div>会社</div>
+        <input
+          value={company}
+          onChange={(e) =>
+            setCompany(e.target.value)
+          }
+          style={{ width: '100%' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <div>開始予定日</div>
+        <input
+          type="date"
+          value={expectedStartDate}
+          onChange={(e) =>
+            setExpectedStartDate(e.target.value)
+          }
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div>終了予定日</div>
+        <input
+          type="date"
+          value={expectedEndDate}
+          onChange={(e) =>
+            setExpectedEndDate(e.target.value)
+          }
+        />
       </div>
 
       <div
         style={{
-          marginBottom: 4,
-          fontSize: 11,
-          color: '#777',
-        }}
-      >
-        ERP Project ID：
-        <strong>
-          {project.erp_project_id ?? '未連携'}
-        </strong>
-      </div>
-
-      <div
-        style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          gap: 12,
-          fontSize: 12,
+          gap: 8,
         }}
       >
-        <span
-          style={{
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-          }}
+        <button
+          onClick={handleSave}
+          disabled={saving}
         >
-          荷主：
-          <strong>
-            {project.customer ?? '未設定'}
-          </strong>
-        </span>
+          保存
+        </button>
 
-        <span
-          style={{
-            color: '#777',
-            fontSize: 11,
-            flexShrink: 0,
-          }}
-        >
-          {project.status ?? ''}
-        </span>
+        <button onClick={handleCancel}>
+          キャンセル
+        </button>
       </div>
     </div>
   );
