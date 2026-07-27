@@ -1,14 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import ReceiptDetail from '../../../components/wms/ReceiptDetail';
 import ProjectList from '../../../components/wms/in/ProjectList';
 
 export default function PurchaseReceiptPage() {
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-
   return (
     <main
       style={{
