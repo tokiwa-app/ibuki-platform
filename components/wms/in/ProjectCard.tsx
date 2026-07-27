@@ -22,7 +22,7 @@ export default function ProjectCard({
   const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
 
-  const [erpProjectId, setErpProjectId] = useState('');
+  const erpProjectId = project?.erp_project_id ?? '';
   const [projectName, setProjectName] = useState('');
   const [customer, setCustomer] = useState('');
   const [company, setCompany] = useState('');
@@ -36,9 +36,7 @@ export default function ProjectCard({
   useEffect(() => {
     if (!project) return;
 
-    setErpProjectId(
-      project.erp_project_id ?? '',
-    );
+
     setProjectName(
       project.project_name ?? '',
     );
@@ -99,8 +97,8 @@ export default function ProjectCard({
       await onSave({
         id: project?.id,
 
-        erp_project_id:
-          erpProjectId || null,
+erp_project_id:
+  project?.erp_project_id ?? null,
 
         project_name:
           projectName,
@@ -222,19 +220,10 @@ export default function ProjectCard({
         )}
       </div>
 
-      {editing ? (
-        <input
-          value={erpProjectId}
-          onChange={(e) =>
-            setErpProjectId(e.target.value)
-          }
-        />
-      ) : (
-        <div>
-          {erpProjectId || '-'}
-        </div>
-      )}
-
+<div>
+  {erpProjectId || '未連携'}
+</div>
+      
       {editing ? (
         <input
           type="date"
