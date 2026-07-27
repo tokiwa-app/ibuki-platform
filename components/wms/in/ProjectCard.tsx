@@ -150,10 +150,15 @@ erp_project_id:
       });
 
       setEditing(false);
-    } catch (e) {
-      console.error(e);
-      alert('保存に失敗しました');
-    } finally {
+catch (e) {
+  console.error(e);
+
+  alert(
+    e instanceof Error
+      ? e.message
+      : String(e)
+  );
+}finally {
       setSaving(false);
     }
   }
