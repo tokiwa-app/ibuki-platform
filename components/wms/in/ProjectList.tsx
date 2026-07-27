@@ -24,19 +24,25 @@ export default function ProjectList({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
+        backgroundColor: '#fff',
       }}
     >
+      {/* ヘッダー */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '70px 120px 120px 1fr',
+          gridTemplateColumns:
+            '70px 140px 120px 120px 1fr',
           gap: 8,
-          padding: '8px 12px',
-          fontWeight: 'bold',
+          padding: '8px',
           borderBottom: '1px solid #ddd',
+          backgroundColor: '#fafafa',
+          fontSize: 12,
+          fontWeight: 'bold',
         }}
       >
         <div>操作</div>
+        <div>ERP Project ID</div>
         <div>開始予定日</div>
         <div>荷主</div>
         <div>プロジェクト名</div>
@@ -48,24 +54,38 @@ export default function ProjectList({
           overflowY: 'auto',
         }}
       >
-        {loading && <div>読込中...</div>}
+        {loading && (
+          <div
+            style={{
+              padding: 12,
+            }}
+          >
+            読込中...
+          </div>
+        )}
 
         {error && (
-          <div style={{ color: 'red', padding: 8 }}>
+          <div
+            style={{
+              padding: 12,
+              color: '#c62828',
+            }}
+          >
             {error}
           </div>
         )}
 
-        {projects.map((project) => (
-          <ProjectCard
-            key={project.id}
-            project={project}
-            projectType={projectType}
-            onSave={saveProject}
-          />
-        ))}
+        {!loading &&
+          projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              projectType={projectType}
+              onSave={saveProject}
+            />
+          ))}
 
-        {/* 常に表示する新規入力行 */}
+        {/* 常時表示する新規行 */}
         <ProjectCard
           projectType={projectType}
           onSave={saveProject}
