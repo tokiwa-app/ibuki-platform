@@ -36,14 +36,14 @@ export default function Dashboard() {
       path: '/wms/delivery-note', 
       // カード内に個別の作業ボタンを配置するための設定
       subButtons: [
-        { label: '📥 入庫登録 (PR)', path: '/wms/purchase-receipt', color: '#2e7d32' },
-        { label: '📤 出庫管理 (DN)', path: '/wms/delivery-note', color: '#2b579a' },
+        { label: '📥 入庫登録 (PR)', path: '/wms/in', color: '#2e7d32' },
+        { label: '📤 出庫管理 (DN)', path: '/wms/out', color: '#2b579a' },
       ]
     },
     {
-      title: 'HMS',
+      title: 'MES',
       description: 'ハンディ・現場作業管理',
-      path: '/hms',
+      path: '/mes',
     },
     {
       title: 'マスター管理',
