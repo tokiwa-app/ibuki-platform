@@ -4,16 +4,10 @@ import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import ReceiptDetail from '../../../components/wms/ReceiptDetail';
-import ReceiptList from '../../../components/wms/in/ProjectList';
+import ProjectList from '../../../components/wms/in/ProjectList';
 
 export default function PurchaseReceiptPage() {
-  const [selectedName, setSelectedName] = useState('');
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
-  const handleSaveSuccess = () => {
-    setRefreshTrigger((prev) => prev + 1);
-    setSelectedName('');
-  };
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   return (
     <main
@@ -30,16 +24,16 @@ export default function PurchaseReceiptPage() {
         titleBackground="#2e7d32"
         titleColor="#fff"
         left={
-          <ReceiptList
-            selectedName={selectedName}
-            onSelect={setSelectedName}
-            refreshTrigger={refreshTrigger}
+          <ProjectList
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            projectType="入庫案件"
           />
         }
         right={
           <ReceiptDetail
-            name={selectedName}
-            onSaveSuccess={handleSaveSuccess}
+            name=""
+            onSaveSuccess={() => {}}
           />
         }
       />
