@@ -1,6 +1,3 @@
-import { supabase } from '../../lib/supabaseClient';
-
-
 export async function syncERPProject(
   data: {
     id: number;
@@ -14,23 +11,41 @@ export async function syncERPProject(
 ) {
 
 
-  const {
-    data: result,
-    error,
-  } =
-    await supabase.functions.invoke(
-      'sync-project',
+  const response =
+    await fetch(
+      '/api/erpnext/projects',
       {
-        body: data,
+
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body:
+          JSON.stringify(data),
+
       }
     );
 
 
-  if (error) {
-    throw error;
+
+  if (!response.ok) {
+
+    const error =
+      await response.json();
+
+
+    throw new Error(
+      error.error ??
+      'ERP sync failed'
+    );
+
   }
 
 
-  return result;
+
+  return response.json();
 
 }
