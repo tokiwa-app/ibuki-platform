@@ -17,12 +17,13 @@ export async function GET(
       '/api/resource/Stock Entry?';
 
 
+    // まず最小項目で確認
     const fields = [
       'name',
+      'project',
       'stock_entry_type',
       'posting_date',
       'status',
-      'project',
     ];
 
 
@@ -59,31 +60,46 @@ export async function GET(
     }
 
 
+    // まず1項目だけで確認
     path +=
-      '&order_by=posting_date desc, creation desc';
+      '&order_by=posting_date desc';
+
+
+    console.log(
+      'STOCK ENTRY PATH:',
+      path
+    );
 
 
     const result =
       await erpnextRequest(path);
 
 
-    return Response.json(
-      result.data ?? []
+    console.log(
+      'STOCK ENTRY RESULT:',
+      result
     );
 
 
-  } catch (error: any) {
+    return Response.json(
+      result?.data ?? []
+    );
+
+
+  } catch (error: unknown) {
 
     console.error(
       'Stock Entry GET error:',
       error
     );
 
+
     return Response.json(
       {
-        error: String(error),
-        message: error?.message,
-        stack: error?.stack,
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
       },
       {
         status: 500,
