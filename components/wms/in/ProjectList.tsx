@@ -5,10 +5,12 @@ import { useProjects } from '../../../hooks/projects/useProjects';
 
 interface ProjectListProps {
   projectType: string;
+  onSelectProjectId: (projectId: number) => void;
 }
 
 export default function ProjectList({
   projectType,
+  onSelectProjectId,
 }: ProjectListProps) {
   const {
     projects,
@@ -27,13 +29,12 @@ export default function ProjectList({
         backgroundColor: '#fff',
       }}
     >
-      {/* ヘッダー */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: '70px 120px 120px 120px 1fr',
           gap: 8,
-          padding: '8px',
+          padding: 8,
           borderBottom: '1px solid #ddd',
           backgroundColor: '#fafafa',
           fontSize: 12,
@@ -47,24 +48,15 @@ export default function ProjectList({
         <div>プロジェクト名</div>
       </div>
 
-      {/* 一覧 */}
       <div
         style={{
           flex: 1,
           overflowY: 'auto',
         }}
       >
-        {loading && (
-          <div
-            style={{
-              padding: 12,
-            }}
-          >
-            読込中...
-          </div>
-        )}
+        {loading && <div style={{ padding: 12 }}>読込中...</div>}
 
-        {!loading && error && (
+        {error && (
           <div
             style={{
               padding: 12,
@@ -82,6 +74,7 @@ export default function ProjectList({
               project={project}
               projectType={projectType}
               onSave={saveProject}
+              onSelect={() => onSelectProjectId(project.id)}
             />
           ))}
 
@@ -90,19 +83,6 @@ export default function ProjectList({
             projectType={projectType}
             onSave={saveProject}
           />
-        )}
-
-        {!loading && !error && projects.length === 0 && (
-          <div
-            style={{
-              padding: 12,
-              color: '#777',
-              fontSize: 12,
-            }}
-          >
-            登録済みのプロジェクトはありません。
-            下の入力欄から新規登録できます。
-          </div>
         )}
       </div>
     </div>
