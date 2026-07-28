@@ -13,13 +13,17 @@ export async function GET(
       searchParams.get('projectId');
 
 
-    const fields = [
-      'project',
-    ];
-
-
     let path =
       '/api/resource/Stock Entry?';
+
+
+    const fields = [
+      'name',
+      'project',
+      'stock_entry_type',
+      'posting_date',
+      'status',
+    ];
 
 
     path +=
@@ -29,7 +33,34 @@ export async function GET(
 
 
     path +=
-      '&limit_page_length=10';
+      '&limit_page_length=100';
+
+
+    if (projectId) {
+
+      const project =
+        `I${String(projectId).padStart(8, '0')}`;
+
+
+      const filters = [
+        [
+          'Stock Entry',
+          'project',
+          '=',
+          project,
+        ],
+      ];
+
+
+      path +=
+        `&filters=${encodeURIComponent(
+          JSON.stringify(filters)
+        )}`;
+    }
+
+
+    path +=
+      '&order_by=posting_date desc';
 
 
     console.log(
@@ -42,12 +73,6 @@ export async function GET(
       await erpnextRequest(path);
 
 
-    console.log(
-      'STOCK ENTRY RESULT:',
-      JSON.stringify(result)
-    );
-
-
     return Response.json(
       result?.data ?? []
     );
@@ -56,7 +81,7 @@ export async function GET(
   } catch (error: unknown) {
 
     console.error(
-      'STOCK ENTRY ERROR:',
+      'Stock Entry GET error:',
       error
     );
 
@@ -66,7 +91,7 @@ export async function GET(
         error:
           error instanceof Error
             ? error.message
-            : String(error),
+            : 'Stock Entry取得失敗',
       },
       {
         status: 500,
