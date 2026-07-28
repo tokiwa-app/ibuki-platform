@@ -1,10 +1,12 @@
 'use client';
 
+
 import {
   useCallback,
   useEffect,
   useState,
 } from 'react';
+
 
 
 import {
@@ -14,6 +16,7 @@ import {
 } from './projectSupabase';
 
 
+
 import {
   syncERPProject,
 } from './projectERP';
@@ -21,21 +24,22 @@ import {
 
 
 
+
+
 export interface Project {
 
-  id: number;
+  id:number;
 
-  project_id: string | null;
+  project_name:string;
 
-  project_name: string;
+  status:string|null;
 
-  status: string | null;
+  priority:string|null;
 
-  priority: string | null;
 
-  created_at: string;
+  created_at:string;
 
-  updated_at: string;
+  updated_at:string;
 
 }
 
@@ -45,13 +49,17 @@ export interface Project {
 
 export interface SaveProjectInput {
 
-  id?: number;
 
-  project_name: string;
+  id?:number;
 
-  status: string | null;
 
-  priority: string | null;
+  project_name:string;
+
+
+  status:string|null;
+
+
+  priority:string|null;
 
 }
 
@@ -60,27 +68,36 @@ export interface SaveProjectInput {
 
 
 
-export function useProjects() {
+
+
+
+export function useProjects(){
+
 
 
   const [
     projects,
     setProjects,
-  ] = useState<Project[]>([]);
+  ] =
+    useState<Project[]>([]);
+
 
 
 
   const [
     loading,
     setLoading,
-  ] = useState(false);
+  ] =
+    useState(false);
+
 
 
 
   const [
     error,
     setError,
-  ] = useState('');
+  ] =
+    useState('');
 
 
 
@@ -89,16 +106,10 @@ export function useProjects() {
 
 
   const fetchProjects =
-    useCallback(async () => {
+    useCallback(async()=>{
 
 
-      setLoading(true);
-
-      setError('');
-
-
-
-      try {
+      try{
 
 
         const data =
@@ -106,47 +117,37 @@ export function useProjects() {
 
 
         setProjects(
-          data as Project[]
+          data
         );
 
 
-
-      } catch (e) {
-
-
-        console.error(e);
+      }catch(e){
 
 
         setError(
           e instanceof Error
-            ? e.message
-            : '取得失敗'
+          ? e.message
+          : '取得失敗'
         );
-
-
-      } finally {
-
-
-        setLoading(false);
 
 
       }
 
 
-    }, []);
+
+    },[]);
 
 
 
 
 
 
-
-  useEffect(() => {
+  useEffect(()=>{
 
     void fetchProjects();
 
-  }, [
-    fetchProjects,
+  },[
+    fetchProjects
   ]);
 
 
@@ -156,37 +157,31 @@ export function useProjects() {
 
 
 
-
   async function saveProject(
-    input: SaveProjectInput
-  ) {
+    input:SaveProjectInput
+  ){
 
 
-    let project: Project;
+    let project:Project;
 
 
 
-    // =====================
-    // Supabase保存
-    // =====================
-
-
-    if (!input.id) {
+    if(!input.id){
 
 
       project =
         await insertProject(
           input
-        ) as Project;
+        );
 
 
-    } else {
+    }else{
 
 
       project =
         await updateProject(
           input
-        ) as Project;
+        );
 
 
     }
@@ -196,32 +191,27 @@ export function useProjects() {
 
 
 
-    // =====================
     // ERPNext同期
-    // =====================
+
+    await syncERPProject({
+
+      id:
+        project.id,
 
 
-    if (project.project_id) {
+      project_name:
+        project.project_name,
 
 
-await syncERPProject({
-
-  id:
-    project.id,
-
-  project_name:
-    project.project_name,
-
-  status:
-    project.status,
-
-  priority:
-    project.priority,
-
-});
+      status:
+        project.status,
 
 
-    }
+      priority:
+        project.priority,
+
+
+    });
 
 
 
@@ -229,6 +219,7 @@ await syncERPProject({
 
 
     await fetchProjects();
+
 
   }
 
@@ -238,8 +229,8 @@ await syncERPProject({
 
 
 
-  return {
 
+  return {
 
     projects,
 
@@ -250,7 +241,6 @@ await syncERPProject({
     fetchProjects,
 
     saveProject,
-
 
   };
 
