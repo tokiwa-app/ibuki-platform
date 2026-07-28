@@ -73,24 +73,22 @@ const fields = [
     );
 
 
-  } catch (error: any) {
+catch (error:any) {
 
-    console.error(
-      'Stock Entry GET error:',
-      error
-    );
+  console.error(
+    'Stock Entry GET error:',
+    error
+  );
 
-
-    return Response.json(
-      {
-        error:
-          error.message ||
-          'Stock Entry取得失敗',
-      },
-      {
-        status: 500,
-      }
-    );
-
-  }
+  return Response.json(
+    {
+      error: String(error),
+      message: error?.message,
+      stack: error?.stack,
+    },
+    {
+      status:500,
+    }
+  );
+}
 }
