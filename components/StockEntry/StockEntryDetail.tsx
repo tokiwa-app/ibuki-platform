@@ -25,16 +25,23 @@ export default function StockEntryDetail({
   const [error, setError] =
     useState('');
 
+
   useEffect(() => {
     if (projectId == null) {
+      console.log(
+        'Stock Entry projectId null'
+      );
+
       setEntries([]);
       setError('');
       return;
     }
 
+
     async function fetchStockEntries() {
       setLoading(true);
       setError('');
+
 
       try {
         const response = await fetch(
@@ -47,10 +54,13 @@ export default function StockEntryDetail({
           },
         );
 
+
         const text =
           await response.text();
 
+
         let result: unknown;
+
 
         try {
           result = JSON.parse(text);
@@ -59,6 +69,12 @@ export default function StockEntryDetail({
             `APIがJSONを返していません。status=${response.status}`,
           );
         }
+
+
+        console.log(
+          'Stock Entry response:',
+          result
+        );
 
 
         if (!response.ok) {
@@ -70,11 +86,19 @@ export default function StockEntryDetail({
               ? result.error
               : 'Stock Entryの取得に失敗しました';
 
+
           throw new Error(message);
         }
 
 
         if (Array.isArray(result)) {
+
+          console.log(
+            'Stock Entry array:',
+            result
+          );
+
+
           setEntries(result);
           return;
         }
@@ -86,12 +110,24 @@ export default function StockEntryDetail({
           'data' in result &&
           Array.isArray(result.data)
         ) {
+
+          console.log(
+            'Stock Entry data:',
+            result.data
+          );
+
+
           setEntries(result.data);
           return;
         }
 
 
+        console.log(
+          'Stock Entry empty set'
+        );
+
         setEntries([]);
+
 
       } catch (e) {
 
@@ -100,7 +136,14 @@ export default function StockEntryDetail({
           e,
         );
 
+
+        console.log(
+          'Stock Entry error empty set'
+        );
+
+
         setEntries([]);
+
 
         setError(
           e instanceof Error
@@ -108,14 +151,20 @@ export default function StockEntryDetail({
             : 'Stock Entryの取得に失敗しました',
         );
 
+
       } finally {
+
         setLoading(false);
+
       }
     }
 
+
     void fetchStockEntries();
 
+
   }, [projectId]);
+
 
 
   if (projectId == null) {
@@ -127,6 +176,7 @@ export default function StockEntryDetail({
   }
 
 
+
   if (loading) {
     return (
       <div style={{ padding: 16 }}>
@@ -134,6 +184,7 @@ export default function StockEntryDetail({
       </div>
     );
   }
+
 
 
   if (error) {
@@ -150,6 +201,7 @@ export default function StockEntryDetail({
   }
 
 
+
   return (
     <div
       style={{
@@ -159,6 +211,7 @@ export default function StockEntryDetail({
         boxSizing: 'border-box',
       }}
     >
+
       <h3
         style={{
           margin: '0 0 12px',
@@ -170,11 +223,15 @@ export default function StockEntryDetail({
 
 
       {entries.length === 0 ? (
+
         <div style={{ color: '#777' }}>
           Stock Entryはありません。
         </div>
+
       ) : (
+
         entries.map((entry, index) => (
+
           <div
             key={index}
             style={{
@@ -183,12 +240,16 @@ export default function StockEntryDetail({
                 '1px solid #eee',
             }}
           >
+
             Project:
             <strong>
               {entry.project ?? '-'}
             </strong>
+
           </div>
+
         ))
+
       )}
 
     </div>
