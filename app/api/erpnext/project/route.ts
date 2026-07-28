@@ -1,175 +1,272 @@
-import { erpnextRequest } from '../../../../lib/erpnextClient';
+import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
 
-type ProjectRequestBody = {
-  project_name?: string;
-  project_type?: string;
-  customer?: string;
-  company?: string;
-  status?: string;
-  priority?: string;
-  expected_start_date?: string;
-  expected_end_date?: string;
-  notes?: string;
-};
 
-// -------------------------------------------------------------
-// GET: ERPNext ProjectをID指定で1件だけ取得
-//
-// GET /api/erpnext/project?name=PROJ-00001
-// -------------------------------------------------------------
-export async function GET(request: Request) {
+export async function POST(
+  req: Request
+) {
+
+
   try {
-    const { searchParams } = new URL(request.url);
 
-    const name = searchParams.get('name')?.trim();
 
-    if (!name) {
-      return Response.json(
-        {
-          error: 'nameは必須です',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    const path =
-      `/api/resource/Project/${encodeURIComponent(name)}`;
-
-    const result = await erpnextRequest(path, {
-      method: 'GET',
-    });
-
-    return Response.json(result.data || result);
-  } catch (error: unknown) {
-    console.error('Project GET error:', error);
-
-    return Response.json(
-      {
-        error: getErrorMessage(
-          error,
-          'プロジェクトの取得に失敗しました',
-        ),
-      },
-      {
-        status: 500,
-      },
-    );
-  }
-}
-
-// -------------------------------------------------------------
-// POST: ERPNextにProjectを新規作成
-//
-// ERPNextが発行したProject IDを返す
-// -------------------------------------------------------------
-export async function POST(request: Request) {
-  try {
     const body =
-      (await request.json()) as ProjectRequestBody;
+      await req.json();
 
-    const projectName = body.project_name?.trim();
-    const projectType = body.project_type?.trim();
 
-    if (!projectName) {
-      return Response.json(
+
+    const {
+      id,
+      project_name,
+      status,
+      priority,
+    } = body;
+
+
+
+
+    if (!id) {
+
+      return NextResponse.json(
         {
-          error: 'project_nameは必須です',
+          error:
+            'id is required',
         },
         {
-          status: 400,
-        },
+          status:400,
+        }
       );
+
     }
 
-    if (!projectType) {
-      return Response.json(
+
+
+
+    const erpProjectName =
+      `I${String(id).padStart(8,'0')}`;
+
+
+
+
+    const ERP_URL =
+      process.env.ERP_URL;
+
+
+    const API_KEY =
+      process.env.ERP_API_KEY;
+
+
+    const API_SECRET =
+      process.env.ERP_API_SECRET;
+
+
+
+    if (
+      !ERP_URL ||
+      !API_KEY ||
+      !API_SECRET
+    ) {
+
+      return NextResponse.json(
         {
-          error: 'project_typeは必須です',
+          error:
+            'ERP secrets missing',
         },
         {
-          status: 400,
-        },
+          status:500,
+        }
       );
+
     }
 
-    const payload: Record<string, unknown> = {
-      project_name: projectName,
-      project_type: projectType,
-      status: body.status?.trim() || 'Open',
+
+
+
+
+    const headers = {
+
+      Authorization:
+        `token ${API_KEY}:${API_SECRET}`,
+
+      "Content-Type":
+        "application/json",
+
     };
 
-    if (body.customer?.trim()) {
-      payload.customer = body.customer.trim();
+
+
+
+
+
+
+    // =====================
+    // 存在確認
+    // =====================
+
+
+    const checkResponse =
+      await fetch(
+
+        `${ERP_URL}/api/resource/Project/${erpProjectName}`,
+
+        {
+          method:'GET',
+          headers,
+        }
+
+      );
+
+
+
+
+    let response;
+
+
+
+
+
+
+    // =====================
+    // UPDATE
+    // =====================
+
+
+    if(checkResponse.ok){
+
+
+      response =
+        await fetch(
+
+          `${ERP_URL}/api/resource/Project/${erpProjectName}`,
+
+          {
+
+            method:'PUT',
+
+            headers,
+
+
+            body:JSON.stringify({
+
+              data:{
+
+                project_name,
+
+                status,
+
+                priority,
+
+              }
+
+            })
+
+          }
+
+        );
+
+
+
     }
 
-    if (body.company?.trim()) {
-      payload.company = body.company.trim();
+
+
+
+
+
+
+    // =====================
+    // CREATE
+    // =====================
+
+
+    else{
+
+
+      response =
+        await fetch(
+
+          `${ERP_URL}/api/resource/Project`,
+
+          {
+
+            method:'POST',
+
+            headers,
+
+
+            body:JSON.stringify({
+
+              data:{
+
+                name:
+                  erpProjectName,
+
+                project_name,
+
+                status,
+
+                priority,
+
+              }
+
+            })
+
+          }
+
+        );
+
+
     }
 
-    if (body.priority?.trim()) {
-      payload.priority = body.priority.trim();
-    }
 
-    if (body.expected_start_date) {
-      payload.expected_start_date =
-        body.expected_start_date;
-    }
 
-    if (body.expected_end_date) {
-      payload.expected_end_date =
-        body.expected_end_date;
-    }
 
-    if (body.notes?.trim()) {
-      payload.notes = body.notes.trim();
-    }
 
-    const result = await erpnextRequest(
-      '/api/resource/Project',
+
+
+    const result =
+      await response.json();
+
+
+
+
+    return NextResponse.json(
+
+      result,
+
       {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      },
+        status:
+          response.status,
+      }
+
     );
 
-    const project = result.data || result;
 
-    return Response.json(
-      {
-        erp_project_id: project.name,
-      },
-      {
-        status: 201,
-      },
-    );
-  } catch (error: unknown) {
-    console.error('Project POST error:', error);
 
-    return Response.json(
-      {
-        error: getErrorMessage(
-          error,
-          'プロジェクトの作成に失敗しました',
-        ),
-      },
-      {
-        status: 500,
-      },
+
+  } catch(error){
+
+
+    console.error(
+      error
     );
+
+
+
+    return NextResponse.json(
+
+      {
+        error:
+          String(error),
+      },
+
+      {
+        status:500,
+      }
+
+    );
+
+
   }
-}
 
-function getErrorMessage(
-  error: unknown,
-  fallback: string,
-): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return fallback;
 }
