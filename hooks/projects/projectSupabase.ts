@@ -1,7 +1,16 @@
 import { supabase } from '../../lib/supabaseClient';
 
+import {
+  Project,
+  SaveProjectInput,
+} from './useProjects';
+
+
+
+
 
 export async function getProjects() {
+
 
   const {
     data,
@@ -18,12 +27,14 @@ export async function getProjects() {
       );
 
 
-  if (error) {
+
+  if(error){
     throw error;
   }
 
 
-  return data ?? [];
+
+  return (data ?? []) as Project[];
 
 }
 
@@ -31,8 +42,11 @@ export async function getProjects() {
 
 
 
+
+
+
 export async function insertProject(
-  input:any
+  input: SaveProjectInput
 ) {
 
 
@@ -47,15 +61,19 @@ export async function insertProject(
         project_name:
           input.project_name,
 
+
         status:
           input.status,
+
 
         priority:
           input.priority,
 
+
       })
       .select()
       .single();
+
 
 
 
@@ -65,38 +83,7 @@ export async function insertProject(
 
 
 
-  const project_id =
-    `I${String(data.id).padStart(8,'0')}`;
-
-
-
-  const {
-    data: updated,
-    error:updateError
-  } =
-    await supabase
-      .from('projects')
-      .update({
-
-        project_id,
-
-      })
-      .eq(
-        'id',
-        data.id
-      )
-      .select()
-      .single();
-
-
-
-  if(updateError){
-    throw updateError;
-  }
-
-
-
-  return updated;
+  return data as Project;
 
 }
 
@@ -104,14 +91,17 @@ export async function insertProject(
 
 
 
+
+
+
 export async function updateProject(
-  input:any
+  input: SaveProjectInput
 ) {
 
 
   const {
     data,
-    error
+    error,
   } =
     await supabase
       .from('projects')
@@ -120,11 +110,14 @@ export async function updateProject(
         project_name:
           input.project_name,
 
+
         status:
           input.status,
 
+
         priority:
           input.priority,
+
 
       })
       .eq(
@@ -136,11 +129,13 @@ export async function updateProject(
 
 
 
+
   if(error){
     throw error;
   }
 
 
-  return data;
+
+  return data as Project;
 
 }
