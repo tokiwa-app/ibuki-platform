@@ -10,11 +10,7 @@ interface StockEntryDetailProps {
 }
 
 interface StockEntry {
-  name: string;
-  stock_entry_type?: string;
-  posting_date?: string;
-  status?: string;
-  total_outgoing_value?: number;
+  project?: string | null;
 }
 
 export default function StockEntryDetail({
@@ -51,7 +47,8 @@ export default function StockEntryDetail({
           },
         );
 
-        const text = await response.text();
+        const text =
+          await response.text();
 
         let result: unknown;
 
@@ -62,6 +59,7 @@ export default function StockEntryDetail({
             `APIがJSONを返していません。status=${response.status}`,
           );
         }
+
 
         if (!response.ok) {
           const message =
@@ -75,10 +73,12 @@ export default function StockEntryDetail({
           throw new Error(message);
         }
 
+
         if (Array.isArray(result)) {
           setEntries(result);
           return;
         }
+
 
         if (
           typeof result === 'object' &&
@@ -90,8 +90,16 @@ export default function StockEntryDetail({
           return;
         }
 
+
         setEntries([]);
+
       } catch (e) {
+
+        console.error(
+          'Stock Entry取得エラー',
+          e,
+        );
+
         setEntries([]);
 
         setError(
@@ -99,13 +107,16 @@ export default function StockEntryDetail({
             ? e.message
             : 'Stock Entryの取得に失敗しました',
         );
+
       } finally {
         setLoading(false);
       }
     }
 
     void fetchStockEntries();
+
   }, [projectId]);
+
 
   if (projectId == null) {
     return (
@@ -115,6 +126,7 @@ export default function StockEntryDetail({
     );
   }
 
+
   if (loading) {
     return (
       <div style={{ padding: 16 }}>
@@ -122,6 +134,7 @@ export default function StockEntryDetail({
       </div>
     );
   }
+
 
   if (error) {
     return (
@@ -135,6 +148,7 @@ export default function StockEntryDetail({
       </div>
     );
   }
+
 
   return (
     <div
@@ -154,42 +168,29 @@ export default function StockEntryDetail({
         Stock Entry
       </h3>
 
+
       {entries.length === 0 ? (
         <div style={{ color: '#777' }}>
           Stock Entryはありません。
         </div>
       ) : (
-        entries.map((entry) => (
+        entries.map((entry, index) => (
           <div
-            key={entry.name}
+            key={index}
             style={{
-              display: 'grid',
-              gridTemplateColumns:
-                '160px 160px 120px 100px',
-              gap: 8,
-              padding: '8px 0',
+              padding: 12,
               borderBottom:
                 '1px solid #eee',
             }}
           >
-            <div>
-              {entry.name}
-            </div>
-
-            <div>
-              {entry.stock_entry_type ?? '-'}
-            </div>
-
-            <div>
-              {entry.posting_date ?? '-'}
-            </div>
-
-            <div>
-              {entry.status ?? '-'}
-            </div>
+            Project:
+            <strong>
+              {entry.project ?? '-'}
+            </strong>
           </div>
         ))
       )}
+
     </div>
   );
 }
