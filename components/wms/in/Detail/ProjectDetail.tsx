@@ -1,6 +1,6 @@
 'use client';
 
-import PurchaseReceiptDetail from './PurchaseReceiptDetail';
+import PurchaseReceiptDetail from '../../../PurchaseReceipt/PurchaseReceiptDetail';
 
 interface ProjectDetailProps {
   projectId: number | null;
