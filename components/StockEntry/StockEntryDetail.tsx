@@ -235,9 +235,7 @@ export default function StockEntryDetail({
                 {entry.posting_date ?? '-'}
               </div>
 
-              <div>
-                {entry.status ?? '-'}
-              </div>
+
 
             </div>
 
