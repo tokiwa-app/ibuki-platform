@@ -1,16 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Project, SaveProjectInput } from '../../../hooks/projects/useProjects';
+import {
+  Project,
+  SaveProjectInput,
+} from '../../../hooks/projects/projectTypes';
 
 interface ProjectCardProps {
   project?: Project;
   projectType: string;
   onSave: (data: SaveProjectInput) => Promise<void>;
+  onSelect?: () => void;
 }
 
-export default function ProjectCard({ project, projectType, onSave }: ProjectCardProps) {
+export default function ProjectCard({
+  project,
+  projectType,
+  onSave,
+  onSelect,
+}: ProjectCardProps) {
   const isNew = !project;
+
   const [editing, setEditing] = useState(isNew);
   const [saving, setSaving] = useState(false);
 
@@ -44,6 +54,7 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
     setPriority(project.priority ?? null);
     setExpectedStartDate(project.expected_start_date ?? '');
     setExpectedEndDate(project.expected_end_date ?? '');
+
     setEditing(false);
   };
 
@@ -58,26 +69,50 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
     try {
       await onSave({
         id: project?.id,
+
         project_name: projectName,
         project_type: projectType,
+
         customer: customer || null,
         company: company || null,
+
         status,
         priority,
-        expected_start_date: expectedStartDate || null,
-        expected_end_date: expectedEndDate || null,
-        actual_start_date: project?.actual_start_date ?? null,
-        actual_end_date: project?.actual_end_date ?? null,
-        percent_complete: project?.percent_complete ?? 0,
-        collect_progress: project?.collect_progress ?? false,
-        notes: project?.notes ?? null,
-        is_active: project?.is_active ?? true,
+
+        expected_start_date:
+          expectedStartDate || null,
+
+        expected_end_date:
+          expectedEndDate || null,
+
+        actual_start_date:
+          project?.actual_start_date ?? null,
+
+        actual_end_date:
+          project?.actual_end_date ?? null,
+
+        percent_complete:
+          project?.percent_complete ?? 0,
+
+        collect_progress:
+          project?.collect_progress ?? false,
+
+        notes:
+          project?.notes ?? null,
+
+        is_active:
+          project?.is_active ?? true,
       });
 
       setEditing(false);
     } catch (e) {
       console.error(e);
-      alert(e instanceof Error ? e.message : String(e));
+
+      alert(
+        e instanceof Error
+          ? e.message
+          : String(e),
+      );
     } finally {
       setSaving(false);
     }
@@ -85,30 +120,61 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
 
   return (
     <div
+      onClick={() => {
+        if (project && !editing) {
+          onSelect?.();
+        }
+      }}
       style={{
         display: 'grid',
-        gridTemplateColumns: '70px 120px 120px 120px 1fr',
+        gridTemplateColumns:
+          '70px 120px 120px 120px 1fr',
         gap: 8,
         alignItems: 'center',
         padding: '6px 8px',
         borderBottom: '1px solid #eee',
-        backgroundColor: editing ? '#f8fff8' : '#fff',
+        backgroundColor: editing
+          ? '#f8fff8'
+          : '#fff',
+        cursor:
+          project && !editing
+            ? 'pointer'
+            : 'default',
       }}
     >
-      <div style={{ display: 'flex', gap: 4 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 4,
+        }}
+      >
         {editing ? (
           <>
             <button
-              onClick={handleSave}
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleSave();
+              }}
               disabled={saving}
-              style={{ padding: '2px 8px', fontSize: 12 }}
+              style={{
+                padding: '2px 8px',
+                fontSize: 12,
+              }}
             >
               保存
             </button>
+
             {!isNew && (
               <button
-                onClick={cancelEdit}
-                style={{ width: 26, padding: 0, fontSize: 12 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cancelEdit();
+                }}
+                style={{
+                  width: 26,
+                  padding: 0,
+                  fontSize: 12,
+                }}
               >
                 ×
               </button>
@@ -116,8 +182,14 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
           </>
         ) : (
           <button
-            onClick={() => setEditing(true)}
-            style={{ padding: '2px 8px', fontSize: 12 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditing(true);
+            }}
+            style={{
+              padding: '2px 8px',
+              fontSize: 12,
+            }}
           >
             編集
           </button>
@@ -128,7 +200,12 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
         <input
           type="date"
           value={expectedStartDate}
-          onChange={(e) => setExpectedStartDate(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) =>
+            setExpectedStartDate(
+              e.target.value,
+            )
+          }
         />
       ) : (
         <div>{expectedStartDate || '-'}</div>
@@ -137,7 +214,10 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
       {editing ? (
         <input
           value={customer}
-          onChange={(e) => setCustomer(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) =>
+            setCustomer(e.target.value)
+          }
         />
       ) : (
         <div>{customer || '-'}</div>
@@ -146,7 +226,10 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
       {editing ? (
         <input
           value={company}
-          onChange={(e) => setCompany(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) =>
+            setCompany(e.target.value)
+          }
         />
       ) : (
         <div>{company || '-'}</div>
@@ -155,7 +238,12 @@ export default function ProjectCard({ project, projectType, onSave }: ProjectCar
       {editing ? (
         <input
           value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) =>
+            setProjectName(
+              e.target.value,
+            )
+          }
         />
       ) : (
         <div>{projectName}</div>
