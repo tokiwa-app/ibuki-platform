@@ -17,19 +17,13 @@ export async function GET(
       '/api/resource/Stock Entry?';
 
 
-    const fields = [
-      'name',
-      'stock_entry_type',
-      'posting_date',
-      'posting_time',
-      'status',
-      'docstatus',
-      'total_outgoing_value',
-      'total_incoming_value',
-      'project',
-      'creation',
-      'modified',
-    ];
+const fields = [
+  'name',
+  'stock_entry_type',
+  'posting_date',
+  'status',
+  'project',
+];
 
 
     path +=
