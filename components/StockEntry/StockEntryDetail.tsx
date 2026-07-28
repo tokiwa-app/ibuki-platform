@@ -1,257 +1,101 @@
-'use client';
+import { erpnextRequest } from '../../../../lib/erpnextClient';
 
-import {
-  useEffect,
-  useState,
-} from 'react';
+export const dynamic = 'force-dynamic';
 
-interface StockEntryDetailProps {
-  projectId: number | null;
-}
+export async function GET(
+  request: Request
+) {
+  try {
+    const { searchParams } =
+      new URL(request.url);
 
-interface StockEntry {
-  project?: string | null;
-}
-
-export default function StockEntryDetail({
-  projectId,
-}: StockEntryDetailProps) {
-  const [entries, setEntries] =
-    useState<StockEntry[]>([]);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState('');
+    const projectId =
+      searchParams.get('projectId');
 
 
-  useEffect(() => {
-    if (projectId == null) {
-      console.log(
-        'Stock Entry projectId null'
-      );
+    let path =
+      '/api/resource/Stock Entry?';
 
-      setEntries([]);
-      setError('');
-      return;
+
+    const fields = [
+      'name',
+      'project',
+      'stock_entry_type',
+      'posting_date',
+      'status',
+    ];
+
+
+    path +=
+      `fields=${encodeURIComponent(
+        JSON.stringify(fields)
+      )}`;
+
+
+    path +=
+      '&limit_page_length=100';
+
+
+    if (projectId) {
+
+      const project =
+        `I${String(projectId).padStart(8, '0')}`;
+
+
+      const filters = [
+        [
+          'Stock Entry',
+          'project',
+          '=',
+          project,
+        ],
+      ];
+
+
+      path +=
+        `&filters=${encodeURIComponent(
+          JSON.stringify(filters)
+        )}`;
     }
 
 
-    async function fetchStockEntries() {
-      setLoading(true);
-      setError('');
+    path +=
+      '&order_by=posting_date desc';
 
 
-      try {
-        const response = await fetch(
-          `/api/erpnext/stock-entry?projectId=${encodeURIComponent(
-            String(projectId),
-          )}`,
-          {
-            method: 'GET',
-            cache: 'no-store',
-          },
-        );
+    console.log(
+      'STOCK ENTRY PATH:',
+      path
+    );
 
 
-        const text =
-          await response.text();
+    const result =
+      await erpnextRequest(path);
 
 
-        let result: unknown;
+    return Response.json(
+      result?.data ?? []
+    );
 
 
-        try {
-          result = JSON.parse(text);
-        } catch {
-          throw new Error(
-            `APIがJSONを返していません。status=${response.status}`,
-          );
-        }
+  } catch (error: unknown) {
+
+    console.error(
+      'Stock Entry GET error:',
+      error
+    );
 
 
-        console.log(
-          'Stock Entry response:',
-          result
-        );
-
-
-        if (!response.ok) {
-          const message =
-            typeof result === 'object' &&
-            result !== null &&
-            'error' in result &&
-            typeof result.error === 'string'
-              ? result.error
-              : 'Stock Entryの取得に失敗しました';
-
-
-          throw new Error(message);
-        }
-
-
-        if (Array.isArray(result)) {
-
-          console.log(
-            'Stock Entry array:',
-            result
-          );
-
-
-          setEntries(result);
-          return;
-        }
-
-
-        if (
-          typeof result === 'object' &&
-          result !== null &&
-          'data' in result &&
-          Array.isArray(result.data)
-        ) {
-
-          console.log(
-            'Stock Entry data:',
-            result.data
-          );
-
-
-          setEntries(result.data);
-          return;
-        }
-
-
-        console.log(
-          'Stock Entry empty set'
-        );
-
-        setEntries([]);
-
-
-      } catch (e) {
-
-        console.error(
-          'Stock Entry取得エラー',
-          e,
-        );
-
-
-        console.log(
-          'Stock Entry error empty set'
-        );
-
-
-        setEntries([]);
-
-
-        setError(
-          e instanceof Error
-            ? e.message
-            : 'Stock Entryの取得に失敗しました',
-        );
-
-
-      } finally {
-
-        setLoading(false);
-
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Stock Entry取得失敗',
+      },
+      {
+        status: 500,
       }
-    }
-
-
-    void fetchStockEntries();
-
-
-  }, [projectId]);
-
-
-
-  if (projectId == null) {
-    return (
-      <div style={{ padding: 16 }}>
-        プロジェクトを選択してください。
-      </div>
     );
   }
-
-
-
-  if (loading) {
-    return (
-      <div style={{ padding: 16 }}>
-        Stock Entryを読込中...
-      </div>
-    );
-  }
-
-
-
-  if (error) {
-    return (
-      <div
-        style={{
-          padding: 16,
-          color: '#c62828',
-        }}
-      >
-        {error}
-      </div>
-    );
-  }
-
-
-
-  return (
-    <div
-      style={{
-        height: '100%',
-        overflowY: 'auto',
-        padding: 16,
-        boxSizing: 'border-box',
-      }}
-    >
-
-      <h3
-        style={{
-          margin: '0 0 12px',
-          fontSize: 15,
-        }}
-      >
-        Stock Entry
-      </h3>
-
-
-      {entries.length === 0 ? (
-
-        <div style={{ color: '#777' }}>
-          Stock Entryはありません。
-        </div>
-
-      ) : (
-
-        entries.map((entry, index) => (
-
-          <div
-            key={index}
-            style={{
-              padding: 12,
-              borderBottom:
-                '1px solid #eee',
-            }}
-          >
-
-            Project:
-            <strong>
-              {entry.project ?? '-'}
-            </strong>
-
-          </div>
-
-        ))
-
-      )}
-
-    </div>
-  );
 }
