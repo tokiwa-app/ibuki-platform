@@ -1,6 +1,7 @@
 'use client';
 
 import PurchaseReceiptDetail from '../../../PurchaseReceipt/PurchaseReceiptDetail';
+import StockEntryDetail from '../../../StockEntry/StockEntryDetail';
 
 interface ProjectDetailProps {
   projectId: number | null;
@@ -44,10 +45,14 @@ export default function ProjectDetail({
       <div
         style={{
           flex: 1,
-          overflow: 'hidden',
+          overflow: 'auto',
         }}
       >
         <PurchaseReceiptDetail
+          projectId={projectId}
+        />
+
+        <StockEntryDetail
           projectId={projectId}
         />
       </div>
