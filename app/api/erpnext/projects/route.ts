@@ -6,9 +6,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(
   request: Request
 ) {
+
   try {
 
-    const body = await request.json();
+    const body =
+      await request.json();
 
 
     const {
@@ -40,12 +42,29 @@ export async function POST(
 
 
 
-    // 存在確認
+    // ERPNext存在確認
 
-    const check =
-      await erpnextRequest(
-        `/api/resource/Project/${name}`
-      );
+    let exists = false;
+
+
+    try {
+
+      const check =
+        await erpnextRequest(
+          `/api/resource/Project/${name}`
+        );
+
+
+      exists =
+        !!check?.data?.name;
+
+
+    } catch {
+
+      exists = false;
+
+    }
+
 
 
 
@@ -53,9 +72,10 @@ export async function POST(
 
 
 
-    // UPDATE
 
-    if (check?.data?.name) {
+    // 更新
+
+    if (exists) {
 
 
       result =
@@ -65,6 +85,7 @@ export async function POST(
             method: 'PUT',
 
             body: JSON.stringify({
+
               data: {
 
                 project_name,
@@ -74,7 +95,9 @@ export async function POST(
                 priority,
 
               },
+
             }),
+
           }
         );
 
@@ -82,7 +105,7 @@ export async function POST(
     }
 
 
-    // CREATE
+    // 新規作成
 
     else {
 
@@ -91,9 +114,11 @@ export async function POST(
         await erpnextRequest(
           '/api/resource/Project',
           {
+
             method: 'POST',
 
             body: JSON.stringify({
+
               data: {
 
                 name,
@@ -105,7 +130,9 @@ export async function POST(
                 priority,
 
               },
+
             }),
+
           }
         );
 
@@ -115,7 +142,7 @@ export async function POST(
 
 
     return Response.json(
-      result.data
+      result
     );
 
 
@@ -124,6 +151,7 @@ export async function POST(
 
 
     console.error(
+      'ERP PROJECT ERROR',
       error
     );
 
@@ -132,13 +160,13 @@ export async function POST(
       {
         error:
           error.message ||
-          'Project同期に失敗しました',
+          'ERPNext Project同期失敗',
       },
       {
-        status:500,
+        status: 500,
       }
     );
 
-
   }
+
 }
