@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 
     const name = searchParams.get('name');
     const q = searchParams.get('q') || '';
+    const projectId = searchParams.get('projectId');
 
     // ---------------------------------------------------------
     // 詳細取得
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
       'currency',
       'per_billed',
       'company',
+      'project',
       'creation',
       'modified',
     ];
@@ -49,6 +51,18 @@ export async function GET(request: Request) {
     const filters: Array<[string, string, string, string | number]> = [
       ['Purchase Receipt', 'docstatus', '=', 1],
     ];
+
+    // プロジェクトで絞り込み
+    if (projectId) {
+      const erpProjectId = `I${String(Number(projectId)).padStart(8, '0')}`;
+
+      filters.push([
+        'Purchase Receipt',
+        'project',
+        '=',
+        erpProjectId,
+      ]);
+    }
 
     const params = new URLSearchParams();
 
@@ -90,101 +104,3 @@ export async function GET(request: Request) {
     );
   }
 }
-
-// -------------------------------------------------------------
-// POST: 直接入庫（Purchase Receipt）の新規作成
-// -------------------------------------------------------------
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
-    if (!body.supplier) {
-      return Response.json(
-        {
-          error: 'supplierは必須です',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    if (!Array.isArray(body.items) || body.items.length === 0) {
-      return Response.json(
-        {
-          error: 'itemsは1件以上必要です',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    const invalidItem = body.items.find(
-      (item: any) =>
-        !item.item_code ||
-        !Number.isFinite(Number(item.qty)) ||
-        Number(item.qty) <= 0,
-    );
-
-    if (invalidItem) {
-      return Response.json(
-        {
-          error: 'item_codeと0より大きいqtyを指定してください',
-        },
-        {
-          status: 400,
-        },
-      );
-    }
-
-    const payload = {
-      supplier: body.supplier,
-      posting_date:
-        body.posting_date || new Date().toISOString().slice(0, 10),
-      company: body.company || 'Akiyama Shearing',
-
-      items: body.items.map((item: any) => ({
-        item_code: item.item_code,
-        qty: Number(item.qty),
-        uom: item.uom || 'Nos',
-        stock_uom: item.stock_uom || item.uom || 'Nos',
-        warehouse: item.warehouse || 'Stores - HP',
-        rate: Number(item.rate || 0),
-
-        // Purchase Order経由の場合だけ設定
-        ...(item.purchase_order
-          ? { purchase_order: item.purchase_order }
-          : {}),
-
-        ...(item.purchase_order_item
-          ? { purchase_order_item: item.purchase_order_item }
-          : {}),
-      })),
-    };
-
-    const result = await erpnextRequest(
-      '/api/resource/Purchase Receipt',
-      {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      },
-    );
-
-    return Response.json(result.data || result, {
-      status: 201,
-    });
-  } catch (error: any) {
-    console.error('Purchase Receipt POST error:', error);
-
-    return Response.json(
-      {
-        error: error?.message || '入庫登録に失敗しました',
-      },
-      {
-        status: 500,
-      },
-    );
-  }
-}
-
