@@ -1,10 +1,14 @@
 'use client';
 
+import { useState } from 'react';
+
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
-import ReceiptDetail from '../../../components/wms/ReceiptDetail';
 import ProjectList from '../../../components/wms/in/ProjectList';
+import ProjectDetail from '../../../components/wms/in/Detail/ProjectDetail';
 
 export default function PurchaseReceiptPage() {
+  const [projectId, setProjectId] = useState<number | null>(null);
+
   return (
     <main
       style={{
@@ -22,12 +26,12 @@ export default function PurchaseReceiptPage() {
         left={
           <ProjectList
             projectType="入庫案件"
+            onSelectProjectId={setProjectId}
           />
         }
         right={
-          <ReceiptDetail
-            name=""
-            onSaveSuccess={() => {}}
+          <ProjectDetail
+            projectId={projectId}
           />
         }
       />
