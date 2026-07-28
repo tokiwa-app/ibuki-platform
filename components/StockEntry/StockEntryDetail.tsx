@@ -14,7 +14,6 @@ interface StockEntry {
   project?: string | null;
   stock_entry_type?: string | null;
   posting_date?: string | null;
-  status?: string | null;
 }
 
 export default function StockEntryDetail({
