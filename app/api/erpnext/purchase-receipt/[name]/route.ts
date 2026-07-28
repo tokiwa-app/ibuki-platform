@@ -1,18 +1,65 @@
-import { erpnextRequest } from '../../../../../lib/erpnextClient'; // 相対パスは階層に合わせて調整してください
+import { erpnextRequest } from '../../../../../lib/erpnextClient';
+
+interface RouteParams {
+  params: {
+    projectId: string;
+  };
+}
 
 export async function GET(
-  request: Request,
-  { params }: { params: { name: string } }
+  _request: Request,
+  { params }: RouteParams,
 ) {
   try {
-    const { name } = params; // ここで URL パラメータから ID を受け取る
-    
-    const result = await erpnextRequest(`/api/resource/Purchase Receipt/${name}`, {
-      method: 'GET',
-    });
+    const projectId = Number(params.projectId);
 
-    return Response.json(result);
-  } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+    if (
+      !Number.isInteger(projectId) ||
+      projectId <= 0
+    ) {
+      return Response.json(
+        {
+          error: '正しいプロジェクトIDを指定してください',
+        },
+        {
+          status: 400,
+        },
+      );
+    }
+
+    // Supabase ID: 1
+    // ERPNext ID: I00000001
+    const erpProjectId =
+      `I${String(projectId).padStart(8, '0')}`;
+
+    const result = await erpnextRequest(
+      `/api/resource/Project/${encodeURIComponent(erpProjectId)}`,
+      {
+        method: 'GET',
+      },
+    );
+
+    // ERPNextのレスポンスが { data: {...} } の場合は
+    // data部分だけをクライアントへ返す
+    return Response.json(
+      result?.data ?? result,
+    );
+  } catch (error: unknown) {
+    console.error(
+      'ERPNext project fetch error:',
+      error,
+    );
+
+    return Response.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'ERPNextからプロジェクトを取得できませんでした',
+      },
+      {
+        status: 500,
+      },
+    );
   }
 }
