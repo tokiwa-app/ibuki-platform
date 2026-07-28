@@ -12,6 +12,7 @@ interface PurchaseReceiptDetailProps {
 interface PurchaseReceipt {
   name: string;
   supplier?: string;
+  supplier_name?: string;
   posting_date?: string;
   status?: string;
   grand_total?: number;
@@ -32,6 +33,7 @@ export default function PurchaseReceiptDetail({
   useEffect(() => {
     if (projectId == null) {
       setReceipts([]);
+      setError('');
       return;
     }
 
@@ -41,27 +43,55 @@ export default function PurchaseReceiptDetail({
 
       try {
         const response = await fetch(
-          `/api/erpnext/purchase-receipts/project/${projectId}`,
+          `/api/erpnext/purchase-receipt?projectId=${encodeURIComponent(
+            String(projectId),
+          )}`,
           {
             method: 'GET',
             cache: 'no-store',
           },
         );
 
-        const result = await response.json();
+        const text = await response.text();
 
-        if (!response.ok) {
+        let result: unknown;
+
+        try {
+          result = JSON.parse(text);
+        } catch {
           throw new Error(
-            result.error ||
-              'Purchase Receiptの取得に失敗しました',
+            `APIがJSONを返していません。status=${response.status}`,
           );
         }
 
-        setReceipts(
-          Array.isArray(result)
-            ? result
-            : result.data ?? [],
-        );
+        if (!response.ok) {
+          const message =
+            typeof result === 'object' &&
+            result !== null &&
+            'error' in result &&
+            typeof result.error === 'string'
+              ? result.error
+              : 'Purchase Receiptの取得に失敗しました';
+
+          throw new Error(message);
+        }
+
+        if (Array.isArray(result)) {
+          setReceipts(result);
+          return;
+        }
+
+        if (
+          typeof result === 'object' &&
+          result !== null &&
+          'data' in result &&
+          Array.isArray(result.data)
+        ) {
+          setReceipts(result.data);
+          return;
+        }
+
+        setReceipts([]);
       } catch (e) {
         setReceipts([]);
 
@@ -145,7 +175,9 @@ export default function PurchaseReceiptDetail({
             <div>{receipt.name}</div>
 
             <div>
-              {receipt.supplier ?? '-'}
+              {receipt.supplier_name ??
+                receipt.supplier ??
+                '-'}
             </div>
 
             <div>
