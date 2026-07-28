@@ -22,7 +22,6 @@ export async function GET(
       'project',
       'stock_entry_type',
       'posting_date',
-      'status',
     ];
 
 
