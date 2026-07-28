@@ -1,4 +1,6 @@
-components/wms/in/Detail/ProjectDetail.tsx'use client';
+'use client';
+
+import PurchaseReceiptDetail from './PurchaseReceiptDetail';
 
 interface ProjectDetailProps {
   projectId: number | null;
@@ -12,22 +14,43 @@ export default function ProjectDetail({
       style={{
         width: '100%',
         height: '100%',
-        padding: 16,
+        display: 'flex',
+        flexDirection: 'column',
         backgroundColor: '#fff',
         boxSizing: 'border-box',
       }}
     >
-      <h2
+      <div
         style={{
-          margin: 0,
-          marginBottom: 16,
-          fontSize: 18,
+          padding: 16,
+          borderBottom: '1px solid #ddd',
         }}
       >
-        プロジェクト明細
-      </h2>
+        <h2
+          style={{
+            margin: 0,
+            marginBottom: 8,
+            fontSize: 18,
+          }}
+        >
+          プロジェクト明細
+        </h2>
 
-      <div>Project ID : {projectId ?? '-'}</div>
+        <div>
+          Project ID : {projectId ?? '-'}
+        </div>
+      </div>
+
+      <div
+        style={{
+          flex: 1,
+          overflow: 'hidden',
+        }}
+      >
+        <PurchaseReceiptDetail
+          projectId={projectId}
+        />
+      </div>
     </div>
   );
 }
