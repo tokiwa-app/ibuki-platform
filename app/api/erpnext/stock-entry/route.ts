@@ -17,13 +17,13 @@ export async function GET(
       '/api/resource/Stock Entry?';
 
 
-const fields = [
-  'name',
-  'stock_entry_type',
-  'posting_date',
-  'status',
-  'project',
-];
+    const fields = [
+      'name',
+      'stock_entry_type',
+      'posting_date',
+      'status',
+      'project',
+    ];
 
 
     path +=
@@ -56,7 +56,6 @@ const fields = [
         `&filters=${encodeURIComponent(
           JSON.stringify(filters)
         )}`;
-
     }
 
 
@@ -73,22 +72,22 @@ const fields = [
     );
 
 
-catch (error:any) {
+  } catch (error: any) {
 
-  console.error(
-    'Stock Entry GET error:',
-    error
-  );
+    console.error(
+      'Stock Entry GET error:',
+      error
+    );
 
-  return Response.json(
-    {
-      error: String(error),
-      message: error?.message,
-      stack: error?.stack,
-    },
-    {
-      status:500,
-    }
-  );
-}
+    return Response.json(
+      {
+        error: String(error),
+        message: error?.message,
+        stack: error?.stack,
+      },
+      {
+        status: 500,
+      }
+    );
+  }
 }
