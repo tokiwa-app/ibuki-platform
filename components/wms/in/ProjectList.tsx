@@ -7,13 +7,15 @@ interface ProjectListProps {
   projectType: string;
 }
 
-export default function ProjectList({ projectType }: ProjectListProps) {
+export default function ProjectList({
+  projectType,
+}: ProjectListProps) {
   const {
     projects,
     loading,
     error,
     saveProject,
-  } = useProjects();
+  } = useProjects(projectType);
 
   return (
     <div
@@ -25,6 +27,7 @@ export default function ProjectList({ projectType }: ProjectListProps) {
         backgroundColor: '#fff',
       }}
     >
+      {/* ヘッダー */}
       <div
         style={{
           display: 'grid',
@@ -44,15 +47,24 @@ export default function ProjectList({ projectType }: ProjectListProps) {
         <div>プロジェクト名</div>
       </div>
 
+      {/* 一覧 */}
       <div
         style={{
           flex: 1,
           overflowY: 'auto',
         }}
       >
-        {loading && <div style={{ padding: 12 }}>読込中...</div>}
+        {loading && (
+          <div
+            style={{
+              padding: 12,
+            }}
+          >
+            読込中...
+          </div>
+        )}
 
-        {error && (
+        {!loading && error && (
           <div
             style={{
               padding: 12,
@@ -78,6 +90,19 @@ export default function ProjectList({ projectType }: ProjectListProps) {
             projectType={projectType}
             onSave={saveProject}
           />
+        )}
+
+        {!loading && !error && projects.length === 0 && (
+          <div
+            style={{
+              padding: 12,
+              color: '#777',
+              fontSize: 12,
+            }}
+          >
+            登録済みのプロジェクトはありません。
+            下の入力欄から新規登録できます。
+          </div>
         )}
       </div>
     </div>
