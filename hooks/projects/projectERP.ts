@@ -1,12 +1,14 @@
+export interface SyncERPProjectInput {
+  id: number;
+  project_name: string;
+  status: string | null;
+  priority: string | null;
+}
+
 export async function syncERPProject(
-  data: {
-    id: number;
-    project_name: string;
-    status: string | null;
-    priority: string | null;
-  }
+  data: SyncERPProjectInput,
 ) {
-  const res = await fetch('/api/erpnext/projects', {
+  const response = await fetch('/api/erpnext/projects', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -14,15 +16,27 @@ export async function syncERPProject(
     body: JSON.stringify(data),
   });
 
-  const result = await res.json();
+  let result: unknown;
 
-  console.log('ERP RESPONSE', result);
+  try {
+    result = await response.json();
+  } catch {
+    result = null;
+  }
 
-  if (!res.ok) {
-    throw new Error(
-      result.error ??
-      JSON.stringify(result)
-    );
+  if (!response.ok) {
+    let message = `ERPNext同期に失敗しました（${response.status}）`;
+
+    if (
+      result &&
+      typeof result === 'object' &&
+      'error' in result &&
+      typeof result.error === 'string'
+    ) {
+      message = result.error;
+    }
+
+    throw new Error(message);
   }
 
   return result;
