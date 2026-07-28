@@ -25,6 +25,7 @@ export default function ProjectDetail({
         style={{
           padding: 16,
           borderBottom: '1px solid #ddd',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -42,20 +43,40 @@ export default function ProjectDetail({
         </div>
       </div>
 
+
       <div
         style={{
           flex: 1,
-          overflow: 'auto',
+          overflowY: 'auto',
+          padding: 16,
+          boxSizing: 'border-box',
         }}
       >
-        <PurchaseReceiptDetail
-          projectId={projectId}
-        />
 
-        <StockEntryDetail
-          projectId={projectId}
-        />
+        <div
+          style={{
+            marginBottom: 24,
+          }}
+        >
+          <PurchaseReceiptDetail
+            projectId={projectId}
+          />
+        </div>
+
+
+        <div
+          style={{
+            borderTop: '1px solid #ddd',
+            paddingTop: 16,
+          }}
+        >
+          <StockEntryDetail
+            projectId={projectId}
+          />
+        </div>
+
       </div>
+
     </div>
   );
 }
