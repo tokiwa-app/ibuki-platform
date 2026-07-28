@@ -14,9 +14,16 @@ export async function syncERPProject(
     body: JSON.stringify(data),
   });
 
+  const result = await res.json();
+
+  console.log('ERP RESPONSE', result);
+
   if (!res.ok) {
-    throw new Error('ERP sync failed');
+    throw new Error(
+      result.error ??
+      JSON.stringify(result)
+    );
   }
 
-  return res.json();
+  return result;
 }
