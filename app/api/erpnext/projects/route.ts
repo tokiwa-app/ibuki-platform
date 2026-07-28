@@ -1,18 +1,14 @@
-import { NextResponse } from 'next/server';
+import { erpnextRequest } from '../../../../lib/erpnextClient';
 
+export const dynamic = 'force-dynamic';
 
 
 export async function POST(
-  req: Request
+  request: Request
 ) {
-
-
   try {
 
-
-    const body =
-      await req.json();
-
+    const body = await request.json();
 
 
     const {
@@ -24,16 +20,14 @@ export async function POST(
 
 
 
-
     if (!id) {
 
-      return NextResponse.json(
+      return Response.json(
         {
-          error:
-            'id is required',
+          error: 'id is required',
         },
         {
-          status:400,
+          status: 400,
         }
       );
 
@@ -41,114 +35,37 @@ export async function POST(
 
 
 
-
-    const erpProjectName =
-      `I${String(id).padStart(8,'0')}`;
-
+    const name =
+      `I${String(id).padStart(8, '0')}`;
 
 
 
-    const ERP_URL =
-      process.env.ERP_URL;
-
-
-    const API_KEY =
-      process.env.ERP_API_KEY;
-
-
-    const API_SECRET =
-      process.env.ERP_API_SECRET;
-
-
-
-    if (
-      !ERP_URL ||
-      !API_KEY ||
-      !API_SECRET
-    ) {
-
-      return NextResponse.json(
-        {
-          error:
-            'ERP secrets missing',
-        },
-        {
-          status:500,
-        }
-      );
-
-    }
-
-
-
-
-
-    const headers = {
-
-      Authorization:
-        `token ${API_KEY}:${API_SECRET}`,
-
-      "Content-Type":
-        "application/json",
-
-    };
-
-
-
-
-
-
-
-    // =====================
     // 存在確認
-    // =====================
 
-
-    const checkResponse =
-      await fetch(
-
-        `${ERP_URL}/api/resource/Project/${erpProjectName}`,
-
-        {
-          method:'GET',
-          headers,
-        }
-
+    const check =
+      await erpnextRequest(
+        `/api/resource/Project/${name}`
       );
 
 
 
-
-    let response;
-
+    let result;
 
 
 
-
-
-    // =====================
     // UPDATE
-    // =====================
+
+    if (check?.data?.name) {
 
 
-    if(checkResponse.ok){
-
-
-      response =
-        await fetch(
-
-          `${ERP_URL}/api/resource/Project/${erpProjectName}`,
-
+      result =
+        await erpnextRequest(
+          `/api/resource/Project/${name}`,
           {
+            method: 'PUT',
 
-            method:'PUT',
-
-            headers,
-
-
-            body:JSON.stringify({
-
-              data:{
+            body: JSON.stringify({
+              data: {
 
                 project_name,
 
@@ -156,50 +73,30 @@ export async function POST(
 
                 priority,
 
-              }
-
-            })
-
+              },
+            }),
           }
-
         );
-
 
 
     }
 
 
-
-
-
-
-
-    // =====================
     // CREATE
-    // =====================
+
+    else {
 
 
-    else{
-
-
-      response =
-        await fetch(
-
-          `${ERP_URL}/api/resource/Project`,
-
+      result =
+        await erpnextRequest(
+          '/api/resource/Project',
           {
+            method: 'POST',
 
-            method:'POST',
+            body: JSON.stringify({
+              data: {
 
-            headers,
-
-
-            body:JSON.stringify({
-
-              data:{
-
-                name:
-                  erpProjectName,
+                name,
 
                 project_name,
 
@@ -207,12 +104,9 @@ export async function POST(
 
                 priority,
 
-              }
-
-            })
-
+              },
+            }),
           }
-
         );
 
 
@@ -220,31 +114,13 @@ export async function POST(
 
 
 
-
-
-
-
-    const result =
-      await response.json();
-
-
-
-
-    return NextResponse.json(
-
-      result,
-
-      {
-        status:
-          response.status,
-      }
-
+    return Response.json(
+      result.data
     );
 
 
 
-
-  } catch(error){
+  } catch (error: any) {
 
 
     console.error(
@@ -252,21 +128,17 @@ export async function POST(
     );
 
 
-
-    return NextResponse.json(
-
+    return Response.json(
       {
         error:
-          String(error),
+          error.message ||
+          'Project同期に失敗しました',
       },
-
       {
         status:500,
       }
-
     );
 
 
   }
-
 }
