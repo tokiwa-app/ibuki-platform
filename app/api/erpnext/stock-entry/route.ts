@@ -13,18 +13,14 @@ export async function GET(
       searchParams.get('projectId');
 
 
-    let path =
-      '/api/resource/Stock Entry?';
-
-
-    // まず最小項目で確認
     const fields = [
       'name',
       'project',
-      'stock_entry_type',
-      'posting_date',
-      'status',
     ];
+
+
+    let path =
+      '/api/resource/Stock Entry?';
 
 
     path +=
@@ -34,35 +30,7 @@ export async function GET(
 
 
     path +=
-      '&limit_page_length=100';
-
-
-    if (projectId) {
-
-      const project =
-        `I${String(projectId).padStart(8, '0')}`;
-
-
-      const filters = [
-        [
-          'Stock Entry',
-          'project',
-          '=',
-          project,
-        ],
-      ];
-
-
-      path +=
-        `&filters=${encodeURIComponent(
-          JSON.stringify(filters)
-        )}`;
-    }
-
-
-    // まず1項目だけで確認
-    path +=
-      '&order_by=posting_date desc';
+      '&limit_page_length=10';
 
 
     console.log(
@@ -77,7 +45,7 @@ export async function GET(
 
     console.log(
       'STOCK ENTRY RESULT:',
-      result
+      JSON.stringify(result)
     );
 
 
@@ -89,7 +57,7 @@ export async function GET(
   } catch (error: unknown) {
 
     console.error(
-      'Stock Entry GET error:',
+      'STOCK ENTRY ERROR:',
       error
     );
 
