@@ -1,7 +1,7 @@
 'use client';
 
 import PurchaseReceiptDetail from '../../../erp-doctype/PurchaseReceipt/PurchaseReceiptDetail';
-import StockEntryDetail from '../../../../erp-doctype/StockEntry/StockEntryDetail';
+import StockEntryDetail from '../../../erp-doctype/StockEntry/StockEntryDetail';
 
 interface ProjectDetailProps {
   projectId: number | null;
