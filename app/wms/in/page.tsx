@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import ProjectList from '../../../components/projects/ProjectList';
-import ProjectDetail from '../../../components/projects/ProjectDetail';
+import ProjectDetail from '../../../components/wms/in/Detail/ProjectDetail';
 
 export default function PurchaseReceiptPage() {
   const [projectId, setProjectId] =
@@ -28,6 +28,7 @@ export default function PurchaseReceiptPage() {
           <ProjectList
             selectedId={projectId}
             onSelect={setProjectId}
+            projectType="入庫案件"
           />
         }
         right={
