@@ -63,25 +63,24 @@ export default function Dashboard() {
       path: '/mes',
     },
 
-{
-  title: '取引先管理',
-  description: 'カスタマー・サプライヤー情報管理',
-  path: '/masters/party',
-  subButtons: [
-    {
-      label: '👤 カスタマー',
-      path: '/masters/customer',
-      color: '#2563eb',
-    },
-    {
-      label: '🏭 サプライヤー',
-      path: '/masters/supplier',
-      color: '#7c3aed',
-    },
-  ],
-}, '/masters/party',
-    },
-  ];
+  {
+    title: '取引先管理',
+    description: 'カスタマー・サプライヤー情報管理',
+    path: '/masters/party',
+    subButtons: [
+      {
+        label: '👤 カスタマー',
+        path: '/masters/customer',
+        color: '#2563eb',
+      },
+      {
+        label: '🏭 サプライヤー',
+        path: '/masters/supplier',
+        color: '#7c3aed',
+      },
+    ],
+  },
+];
 
 
   return (
