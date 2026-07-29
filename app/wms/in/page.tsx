@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
-import ProjectList from '../../../components/erp-doctype/Project/ProjectList';
+import ProjectList from '../../../components/erp-doctype/Projects/ProjectList';
 import ProjectDetail from '../../../components/wms/in/Detail/ProjectDetail';
 
 export default function PurchaseReceiptPage() {
