@@ -21,9 +21,31 @@ export default function PurchaseReceiptPage() {
       }}
     >
       <MasterDetailLayout
+
         title="入庫管理"
+
         titleBackground="#2e7d32"
+
         titleColor="#fff"
+
+
+        headerRight={
+          <button
+            style={{
+              padding: '6px 14px',
+              borderRadius: 6,
+              border: '1px solid #fff',
+              backgroundColor: 'transparent',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            取引先コード 🔍
+          </button>
+        }
+
+
         left={
           <ProjectList
             selectedId={projectId}
@@ -31,11 +53,14 @@ export default function PurchaseReceiptPage() {
             projectType="入庫案件"
           />
         }
+
+
         right={
           <ProjectDetail
             projectId={projectId}
           />
         }
+
       />
     </main>
   );

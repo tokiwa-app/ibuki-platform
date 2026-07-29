@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import {
+  useState,
+} from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
-import DeliveryDetail from '../../../components/wms/DeliveryDetail';
-import DeliveryList from '../../../components/wms/out/DeliveryList';
+import CustomerList from '../../../components/erp-doctype/Customer/CustomerList';
+import CustomerDetail from '../../../components/erp-doctype/Customer/CustomerDetail';
 
-export default function WmsPage() {
-  const [selectedName, setSelectedName] =
-    useState('');
+
+export default function CustomerPage() {
+
+  const [customerId, setCustomerId] =
+    useState<string | null>(null);
 
 
   return (
@@ -24,9 +28,9 @@ export default function WmsPage() {
 
       <MasterDetailLayout
 
-        title="出庫管理"
+        title="カスタマー管理"
 
-        titleBackground="#2b579a"
+        titleBackground="#2563eb"
 
         titleColor="#fff"
 
@@ -49,16 +53,16 @@ export default function WmsPage() {
 
 
         left={
-          <DeliveryList
-            selectedName={selectedName}
-            onSelect={setSelectedName}
+          <CustomerList
+            selectedId={customerId}
+            onSelect={setCustomerId}
           />
         }
 
 
         right={
-          <DeliveryDetail
-            name={selectedName}
+          <CustomerDetail
+            customerId={customerId}
           />
         }
 
