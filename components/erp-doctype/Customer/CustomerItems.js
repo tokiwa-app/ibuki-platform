@@ -2,32 +2,57 @@
 
 import { useRouter } from 'next/navigation';
 
-function getCustomerCode(customerCode) {
-  return String(customerCode || '').padStart(4, '0');
+
+interface Props {
+  customerCode: string | null;
 }
 
-export default function CustomerItems({ customerCode }) {
+
+export default function CustomerItems({
+  customerCode,
+}: Props) {
+
   const router = useRouter();
-  const code = getCustomerCode(customerCode);
+
+
+  if (!customerCode) {
+    return null;
+  }
+
 
   return (
     <section style={cardStyle}>
+
       <div>
-        <h2 style={titleStyle}>関連アイテム</h2>
+
+        <h2 style={titleStyle}>
+          荷主商品マスター
+        </h2>
+
         <p style={textStyle}>
-          この顧客に紐づく商品マスターを管理します。
+          この荷主で管理する商品情報を登録・管理します。
         </p>
+
       </div>
 
+
       <button
-        onClick={() => router.push(`/masters/customer/${customerCode}/items`)}
+        onClick={() =>
+          router.push(
+            `/masters/customer/${customerCode}/items`,
+          )
+        }
         style={buttonStyle}
       >
-        アイテムマスターを開く
+        商品マスターを開く
       </button>
+
+
     </section>
   );
 }
+
+
 
 const cardStyle = {
   maxWidth: 980,
@@ -43,16 +68,22 @@ const cardStyle = {
   gap: 16,
 };
 
+
+
 const titleStyle = {
   fontSize: 20,
   margin: 0,
 };
+
+
 
 const textStyle = {
   color: '#6b7280',
   margin: '4px 0 0',
   fontSize: 14,
 };
+
+
 
 const buttonStyle = {
   padding: '10px 20px',
