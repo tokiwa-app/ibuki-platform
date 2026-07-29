@@ -5,48 +5,67 @@ import {
   useState,
 } from 'react';
 
+import {
+  AgGridReact,
+} from 'ag-grid-react';
+
+import {
+  ColDef,
+  GridReadyEvent,
+} from 'ag-grid-community';
+
+
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+
 
 interface Item {
+
   name: string;
 
-  item_code: string;
+  item_code?: string;
 
-  item_name: string;
+  item_name?: string;
 
   item_group?: string;
 
   stock_uom?: string;
 
-  company?: string;
+  custom_customer?: string;
 
-  default_warehouse?: string;
-
-  maintain_stock?: boolean;
-
-  has_batch_no?: boolean;
-
-  has_expiry_date?: boolean;
 }
+
 
 
 interface Props {
+
   selectedId: string | null;
 
   onSelect: (id: string) => void;
+
 }
 
 
+
 export default function ItemList({
+
   selectedId,
+
   onSelect,
+
 }: Props) {
+
+
 
   const [items, setItems] =
     useState<Item[]>([]);
 
 
+
   const [loading, setLoading] =
     useState(true);
+
 
 
   const [error, setError] =
@@ -54,28 +73,77 @@ export default function ItemList({
 
 
 
+
+  const columnDefs: ColDef<Item>[] = [
+
+    {
+      field: 'item_code',
+      headerName: '商品コード',
+      width: 150,
+    },
+
+
+    {
+      field: 'item_name',
+      headerName: '商品名',
+      flex: 1,
+    },
+
+
+    {
+      field: 'item_group',
+      headerName: '商品分類',
+      width: 160,
+    },
+
+
+    {
+      field: 'stock_uom',
+      headerName: '単位',
+      width: 100,
+    },
+
+
+    {
+      field: 'custom_customer',
+      headerName: '荷主',
+      width: 120,
+    },
+
+  ];
+
+
+
+
+
   useEffect(() => {
 
+
     async function loadItems() {
+
 
       setLoading(true);
 
       setError('');
 
 
+
       try {
+
 
         const res =
           await fetch(
             '/api/erpnext/item',
             {
-              cache: 'no-store',
+              cache:'no-store',
             },
           );
 
 
+
         const data =
           await res.json();
+
 
 
         if (!res.ok) {
@@ -88,12 +156,17 @@ export default function ItemList({
         }
 
 
+
         setItems(
-          data.data ?? data ?? []
+          Array.isArray(data)
+            ? data
+            : data.data ?? []
         );
 
 
-      } catch (e) {
+
+      } catch(e) {
+
 
         setError(
           e instanceof Error
@@ -102,30 +175,36 @@ export default function ItemList({
         );
 
 
+
       } finally {
+
 
         setLoading(false);
 
+
       }
+
 
     }
 
 
+
     void loadItems();
+
 
 
   }, []);
 
 
 
+
+
+
+
   if (loading) {
 
     return (
-      <div
-        style={{
-          padding:16,
-        }}
-      >
+      <div style={{padding:16}}>
         商品読込中...
       </div>
     );
@@ -151,126 +230,67 @@ export default function ItemList({
 
 
 
+
+
+
+
   return (
 
     <div
+      className="ag-theme-quartz"
+
       style={{
         height:'100%',
-        background:'#fff',
-        overflowY:'auto',
+        width:'100%',
       }}
     >
 
+      <AgGridReact<Item>
 
-      <div
-        style={{
-          padding:16,
-          fontWeight:'bold',
-          borderBottom:
-            '1px solid #ddd',
+        rowData={items}
+
+        columnDefs={columnDefs}
+
+
+        defaultColDef={{
+          sortable:true,
+          filter:true,
+          resizable:true,
         }}
-      >
-        商品一覧
-      </div>
+
+
+        rowSelection="single"
 
 
 
-      {
-        items.map((item)=>(
+        onRowClicked={(event)=>{
 
-          <div
+          if(event.data){
 
-            key={item.name}
+            onSelect(
+              event.data.name,
+            );
 
-            onClick={() =>
-              onSelect(item.name)
-            }
+          }
 
-            style={{
-              padding:12,
-              cursor:'pointer',
-
-              borderBottom:
-                '1px solid #eee',
-
-              backgroundColor:
-                selectedId === item.name
-                  ? '#e5e7eb'
-                  : '#fff',
-            }}
-
-          >
-
-            <div
-              style={{
-                fontWeight:'bold',
-                fontSize:14,
-              }}
-            >
-              {item.item_code}
-            </div>
+        }}
 
 
-            <div
-              style={{
-                fontSize:13,
-                color:'#444',
-              }}
-            >
-              {item.item_name}
-            </div>
+
+        getRowClass={(params)=>{
+
+          return params.data?.name === selectedId
+            ? 'selected-row'
+            : '';
+
+        }}
 
 
-            <div
-              style={{
-                marginTop:4,
-                fontSize:12,
-                color:'#777',
-              }}
-            >
-
-              {item.item_group ?? '-'}
-
-              {' / '}
-
-              {item.stock_uom ?? '-'}
-
-            </div>
-
-
-            <div
-              style={{
-                marginTop:4,
-                fontSize:12,
-                color:'#777',
-              }}
-            >
-
-              倉庫:
-              {' '}
-              {item.default_warehouse ?? '-'}
-
-              {' / '}
-
-              ロット:
-              {' '}
-              {
-                item.has_batch_no
-                  ? '有'
-                  : '無'
-              }
-
-            </div>
-
-
-          </div>
-
-        ))
-
-      }
+      />
 
 
     </div>
 
   );
+
 }
