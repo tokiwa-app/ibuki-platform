@@ -7,7 +7,9 @@ import DeliveryDetail from '../../../components/wms/DeliveryDetail';
 import DeliveryList from '../../../components/wms/out/DeliveryList';
 
 export default function WmsPage() {
-  const [selectedName, setSelectedName] = useState('');
+  const [selectedName, setSelectedName] =
+    useState('');
+
 
   return (
     <main
@@ -19,18 +21,49 @@ export default function WmsPage() {
         boxSizing: 'border-box',
       }}
     >
+
       <MasterDetailLayout
+
         title="出庫管理"
+
         titleBackground="#2b579a"
+
         titleColor="#fff"
+
+
+        headerRight={
+          <button
+            style={{
+              padding: '6px 14px',
+              borderRadius: 6,
+              border: '1px solid #fff',
+              backgroundColor: 'transparent',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            取引先コード 🔍
+          </button>
+        }
+
+
         left={
           <DeliveryList
             selectedName={selectedName}
             onSelect={setSelectedName}
           />
         }
-        right={<DeliveryDetail name={selectedName} />}
+
+
+        right={
+          <DeliveryDetail
+            name={selectedName}
+          />
+        }
+
       />
+
     </main>
   );
 }
