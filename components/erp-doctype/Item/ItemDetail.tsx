@@ -5,6 +5,17 @@ import {
   useState,
 } from 'react';
 
+import {
+  AgGridReact,
+} from 'ag-grid-react';
+
+import {
+  ColDef,
+} from 'ag-grid-community';
+
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+
 
 
 interface Props {
@@ -29,6 +40,30 @@ interface Item {
 
   custom_customer?: string;
 
+
+  maintain_stock?: number;
+
+  has_batch_no?: number;
+
+  has_expiry_date?: number;
+
+
+  company?: string;
+
+  default_warehouse?: string;
+
+}
+
+
+
+interface RowData {
+
+  category:string;
+
+  label:string;
+
+  value:string;
+
 }
 
 
@@ -40,29 +75,27 @@ export default function ItemDetail({
 }: Props) {
 
 
-  const [item, setItem] =
+  const [item,setItem] =
     useState<Item | null>(null);
 
 
-
-  const [loading, setLoading] =
+  const [loading,setLoading] =
     useState(false);
 
 
-
-  const [error, setError] =
+  const [error,setError] =
     useState('');
 
 
 
 
-  useEffect(() => {
+  useEffect(()=>{
 
 
-    async function loadItem() {
+    async function loadItem(){
 
 
-      if (!itemId) {
+      if(!itemId){
 
         setItem(null);
 
@@ -78,7 +111,7 @@ export default function ItemDetail({
 
 
 
-      try {
+      try{
 
 
         const res =
@@ -96,7 +129,7 @@ export default function ItemDetail({
 
 
 
-        if (!res.ok) {
+        if(!res.ok){
 
           throw new Error(
             data?.error ??
@@ -111,7 +144,7 @@ export default function ItemDetail({
 
 
 
-      } catch(e) {
+      }catch(e){
 
 
         setError(
@@ -121,7 +154,7 @@ export default function ItemDetail({
         );
 
 
-      } finally {
+      }finally{
 
 
         setLoading(false);
@@ -138,20 +171,135 @@ export default function ItemDetail({
 
 
 
-  }, [itemId]);
+  },[itemId]);
 
 
 
 
 
-  if (!itemId) {
+
+  const rowData:RowData[] = [
+
+
+    {
+      category:'基本情報',
+      label:'商品コード',
+      value:item?.item_code ?? '-',
+    },
+
+    {
+      category:'基本情報',
+      label:'商品名',
+      value:item?.item_name ?? '-',
+    },
+
+
+    {
+      category:'基本情報',
+      label:'商品分類',
+      value:item?.item_group ?? '-',
+    },
+
+
+    {
+      category:'基本情報',
+      label:'単位',
+      value:item?.stock_uom ?? '-',
+    },
+
+
+    {
+      category:'基本情報',
+      label:'荷主',
+      value:item?.custom_customer ?? '-',
+    },
+
+
+    {
+      category:'在庫設定',
+      label:'在庫管理',
+      value:item?.maintain_stock ? '有':'無',
+    },
+
+
+    {
+      category:'在庫設定',
+      label:'ロット管理',
+      value:item?.has_batch_no ? '有':'無',
+    },
+
+
+    {
+      category:'在庫設定',
+      label:'期限管理',
+      value:item?.has_expiry_date ? '有':'無',
+    },
+
+
+    {
+      category:'Item Default',
+      label:'会社',
+      value:item?.company ?? '-',
+    },
+
+
+    {
+      category:'Item Default',
+      label:'デフォルト倉庫',
+      value:item?.default_warehouse ?? '-',
+    },
+
+
+    {
+      category:'システム',
+      label:'Item ID',
+      value:item?.name ?? '-',
+    },
+
+
+  ];
+
+
+
+
+
+  const columnDefs:ColDef<RowData>[]=[
+
+
+    {
+      field:'category',
+      headerName:'区分',
+      width:120,
+    },
+
+
+    {
+      field:'label',
+      headerName:'項目',
+      width:180,
+    },
+
+
+    {
+      field:'value',
+      headerName:'値',
+      flex:1,
+    },
+
+
+  ];
+
+
+
+
+
+
+  if(!itemId){
 
     return (
 
       <div style={boxStyle}>
-
         商品を選択してください。
-
       </div>
 
     );
@@ -162,14 +310,12 @@ export default function ItemDetail({
 
 
 
-  if (loading) {
+  if(loading){
 
     return (
 
       <div style={boxStyle}>
-
         Loading...
-
       </div>
 
     );
@@ -180,7 +326,7 @@ export default function ItemDetail({
 
 
 
-  if (error) {
+  if(error){
 
     return (
 
@@ -190,9 +336,7 @@ export default function ItemDetail({
           color:'#c62828',
         }}
       >
-
         {error}
-
       </div>
 
     );
@@ -205,97 +349,32 @@ export default function ItemDetail({
 
   return (
 
-    <div style={boxStyle}>
+    <div
+      className="ag-theme-quartz"
+
+      style={{
+        height:'100%',
+        width:'100%',
+      }}
+    >
 
 
-      <h2 style={titleStyle}>
-        商品詳細
-      </h2>
+      <AgGridReact<RowData>
+
+        rowData={rowData}
+
+        columnDefs={columnDefs}
 
 
-
-      <div style={rowStyle}>
-
-        <label>
-          商品コード
-        </label>
-
-        <span>
-          {item?.item_code ?? '-'}
-        </span>
-
-      </div>
+        defaultColDef={{
+          resizable:true,
+        }}
 
 
-
-      <div style={rowStyle}>
-
-        <label>
-          商品名
-        </label>
-
-        <span>
-          {item?.item_name ?? '-'}
-        </span>
-
-      </div>
+        domLayout="normal"
 
 
-
-      <div style={rowStyle}>
-
-        <label>
-          商品分類
-        </label>
-
-        <span>
-          {item?.item_group ?? '-'}
-        </span>
-
-      </div>
-
-
-
-      <div style={rowStyle}>
-
-        <label>
-          単位
-        </label>
-
-        <span>
-          {item?.stock_uom ?? '-'}
-        </span>
-
-      </div>
-
-
-
-      <div style={rowStyle}>
-
-        <label>
-          荷主
-        </label>
-
-        <span>
-          {item?.custom_customer ?? '-'}
-        </span>
-
-      </div>
-
-
-
-      <div style={rowStyle}>
-
-        <label>
-          Item ID
-        </label>
-
-        <span>
-          {item?.name ?? '-'}
-        </span>
-
-      </div>
-
+      />
 
 
     </div>
@@ -306,38 +385,14 @@ export default function ItemDetail({
 
 
 
-const boxStyle = {
+
+
+const boxStyle={
 
   padding:16,
 
   background:'#fff',
 
   height:'100%',
-
-  overflowY:'auto' as const,
-
-};
-
-
-
-const titleStyle = {
-
-  fontSize:20,
-
-  marginBottom:24,
-
-};
-
-
-
-const rowStyle = {
-
-  display:'grid',
-
-  gridTemplateColumns:'140px 1fr',
-
-  padding:'10px 0',
-
-  borderBottom:'1px solid #eee',
 
 };
