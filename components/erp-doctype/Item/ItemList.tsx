@@ -11,9 +11,7 @@ import {
 
 import {
   ColDef,
-  GridReadyEvent,
 } from 'ag-grid-community';
-
 
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
@@ -42,9 +40,11 @@ interface Props {
 
   selectedId: string | null;
 
-  onSelect: (id: string) => void;
+  onSelect: (id:string)=>void;
 
 }
+
+
 
 
 
@@ -54,61 +54,74 @@ export default function ItemList({
 
   onSelect,
 
-}: Props) {
+}:Props){
 
 
 
-  const [items, setItems] =
+  const [items,setItems] =
     useState<Item[]>([]);
 
 
 
-  const [loading, setLoading] =
+  const [loading,setLoading] =
     useState(true);
 
 
 
-  const [error, setError] =
+  const [error,setError] =
     useState('');
 
 
 
 
-  const columnDefs: ColDef<Item>[] = [
 
-    {
-      field: 'item_code',
-      headerName: '商品コード',
-      width: 150,
-    },
+  const columnDefs:ColDef<Item>[] = [
+
 
 
     {
-      field: 'item_name',
-      headerName: '商品名',
-      flex: 1,
+      field:'item_code',
+      headerName:'商品コード',
+      width:150,
+      editable:true,
     },
+
 
 
     {
-      field: 'item_group',
-      headerName: '商品分類',
-      width: 160,
+      field:'item_name',
+      headerName:'商品名',
+      flex:1,
+      editable:true,
     },
+
 
 
     {
-      field: 'stock_uom',
-      headerName: '単位',
-      width: 100,
+      field:'item_group',
+      headerName:'商品分類',
+      width:160,
+      editable:true,
     },
+
 
 
     {
-      field: 'custom_customer',
-      headerName: '荷主',
-      width: 120,
+      field:'stock_uom',
+      headerName:'単位',
+      width:100,
+      editable:true,
     },
+
+
+
+    {
+      field:'custom_customer',
+      headerName:'荷主',
+      width:120,
+      editable:true,
+    },
+
 
   ];
 
@@ -116,19 +129,15 @@ export default function ItemList({
 
 
 
-  useEffect(() => {
 
 
-    async function loadItems() {
+  useEffect(()=>{
 
 
-      setLoading(true);
-
-      setError('');
+    async function loadItems(){
 
 
-
-      try {
+      try{
 
 
         const res =
@@ -146,7 +155,7 @@ export default function ItemList({
 
 
 
-        if (!res.ok) {
+        if(!res.ok){
 
           throw new Error(
             data?.error ??
@@ -165,7 +174,7 @@ export default function ItemList({
 
 
 
-      } catch(e) {
+      }catch(e){
 
 
         setError(
@@ -175,8 +184,7 @@ export default function ItemList({
         );
 
 
-
-      } finally {
+      }finally{
 
 
         setLoading(false);
@@ -193,7 +201,7 @@ export default function ItemList({
 
 
 
-  }, []);
+  },[]);
 
 
 
@@ -201,32 +209,44 @@ export default function ItemList({
 
 
 
-  if (loading) {
+
+  if(loading){
 
     return (
+
       <div style={{padding:16}}>
+
         商品読込中...
+
       </div>
+
     );
 
   }
 
 
 
-  if (error) {
+
+
+  if(error){
 
     return (
+
       <div
         style={{
           padding:16,
           color:'#c62828',
         }}
       >
+
         {error}
+
       </div>
+
     );
 
   }
+
 
 
 
@@ -236,34 +256,52 @@ export default function ItemList({
 
   return (
 
+
     <div
+
       className="ag-theme-quartz"
 
       style={{
+
         height:'100%',
+
         width:'100%',
+
       }}
+
     >
+
 
       <AgGridReact<Item>
 
+
         rowData={items}
+
 
         columnDefs={columnDefs}
 
 
+
         defaultColDef={{
+
           sortable:true,
+
           filter:true,
+
           resizable:true,
+
         }}
+
+
 
 
         rowSelection="single"
 
 
 
+
         onRowClicked={(event)=>{
+
 
           if(event.data){
 
@@ -273,23 +311,89 @@ export default function ItemList({
 
           }
 
+
         }}
+
+
+
+
+
+        onCellValueChanged={async(event)=>{
+
+
+          try{
+
+
+            await fetch(
+
+              '/api/erpnext/item/update',
+
+              {
+
+                method:'PUT',
+
+
+                headers:{
+
+                  'Content-Type':
+                    'application/json',
+
+                },
+
+
+                body:
+
+                  JSON.stringify(
+                    event.data,
+                  ),
+
+
+              },
+
+            );
+
+
+          }catch(error){
+
+
+            console.error(
+              '更新失敗',
+              error,
+            );
+
+
+          }
+
+
+        }}
+
+
+
 
 
 
         getRowClass={(params)=>{
 
+
           return params.data?.name === selectedId
+
             ? 'selected-row'
+
             : '';
 
+
+
         }}
+
+
 
 
       />
 
 
+
     </div>
+
 
   );
 
