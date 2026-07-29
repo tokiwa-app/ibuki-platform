@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
-  erpnextGet,
+  erpnextRequest,
 } from '../../../../lib/erpnextClient';
 
 
@@ -11,8 +11,8 @@ export async function GET(
 
   try {
 
-    const items =
-      await erpnextGet(
+const items =
+  await erpnextRequest(
         '/api/resource/Item',
         {
           fields: JSON.stringify([
@@ -49,8 +49,8 @@ export async function GET(
 
           try {
 
-            const detail =
-              await erpnextGet(
+const detail =
+  await erpnextRequest(
                 `/api/resource/Item/${encodeURIComponent(
                   item.name,
                 )}`,
