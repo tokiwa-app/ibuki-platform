@@ -35,7 +35,7 @@ export default function Home() {
           return;
         }
 
-        await loadTenants(session.user.id);
+        await loadTenants(session.user.email);
       } catch (error) {
         console.error(error);
         setMsg('ログイン状態の確認に失敗しました');
@@ -46,7 +46,7 @@ export default function Home() {
     initialize();
   }, []);
 
-  async function loadTenants(userId) {
+  async function loadTenants(email) {
     setBusy(true);
     setMsg('');
 
@@ -54,7 +54,7 @@ export default function Home() {
       const { data, error } = await supabase
         .from('user_tenants')
         .select('tenant_id')
-        .eq('user_id', userId)
+        .eq('email', email)
         .order('tenant_id', { ascending: true });
 
       if (error) {
@@ -91,14 +91,8 @@ export default function Home() {
       );
       setStep('tenant');
     } catch (error) {
-  console.error('loadTenants error:', error);
-  console.error('message:', error?.message);
-  console.error('details:', error?.details);
-  console.error('hint:', error?.hint);
-  console.error('code:', error?.code);
-
-  setMsg('テナント情報の取得に失敗しました');
-}
+      console.error(error);
+      setMsg('テナント情報の取得に失敗しました');
     } finally {
       setBusy(false);
     }
