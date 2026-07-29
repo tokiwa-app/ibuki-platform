@@ -1,12 +1,13 @@
 'use client';
 
 import {
+  useEffect,
   useState,
 } from 'react';
 
 
 interface StockEntryReceiptProps {
-  stockEntryName?: string | null;
+  stockEntryName: string | null;
 }
 
 
@@ -17,11 +18,25 @@ interface StockEntryItem {
 }
 
 
+interface StockEntryResponse {
+  name?: string;
+  stock_entry_type?: string;
+  posting_date?: string;
+  items?: {
+    target_warehouse?: string;
+    item_code?: string;
+    qty?: number;
+  }[];
+}
+
+
+
 const emptyRow = (): StockEntryItem => ({
   targetWarehouse: '',
   itemCode: '',
   qty: 0,
 });
+
 
 
 export default function StockEntryReceipt({
@@ -35,12 +50,118 @@ export default function StockEntryReceipt({
     ]);
 
 
+  const [loading, setLoading] =
+    useState(false);
+
+
+  const [error, setError] =
+    useState('');
+
+
+
+  useEffect(() => {
+
+    if (!stockEntryName) {
+      setItems([
+        emptyRow(),
+      ]);
+      return;
+    }
+
+
+    async function fetchStockEntry() {
+
+      setLoading(true);
+      setError('');
+
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/erpnext/stock-entry/receipt/${encodeURIComponent(
+              stockEntryName,
+            )}`,
+            {
+              method: 'GET',
+              cache: 'no-store',
+            },
+          );
+
+
+        const result =
+          await response.json() as StockEntryResponse;
+
+
+
+        if (!response.ok) {
+          throw new Error(
+            'Stock Entry取得失敗',
+          );
+        }
+
+
+
+        const rows =
+          result.items?.map(
+            (item) => ({
+              targetWarehouse:
+                item.target_warehouse ?? '',
+
+              itemCode:
+                item.item_code ?? '',
+
+              qty:
+                item.qty ?? 0,
+            }),
+          ) ?? [];
+
+
+
+        setItems([
+          ...rows,
+          emptyRow(),
+        ]);
+
+
+
+      } catch (e) {
+
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'Stock Entry取得失敗',
+        );
+
+
+        setItems([
+          emptyRow(),
+        ]);
+
+
+      } finally {
+
+        setLoading(false);
+
+      }
+
+    }
+
+
+    void fetchStockEntry();
+
+
+  }, [stockEntryName]);
+
+
+
 
   function updateRow(
     index: number,
     key: keyof StockEntryItem,
     value: string | number,
   ) {
+
 
     const next =
       [...items];
@@ -52,8 +173,10 @@ export default function StockEntryReceipt({
     };
 
 
+
     const last =
       next[next.length - 1];
+
 
 
     // 最終行に入力されたら空行追加
@@ -62,15 +185,19 @@ export default function StockEntryReceipt({
       last.itemCode ||
       last.qty > 0
     ) {
+
       next.push(
         emptyRow(),
       );
+
     }
+
 
 
     setItems(next);
 
   }
+
 
 
 
@@ -85,13 +212,25 @@ export default function StockEntryReceipt({
       );
 
 
+
     if (
-      next.length === 0
+      next.length === 0 ||
+      (
+        next.length > 0 &&
+        (
+          next[next.length - 1].targetWarehouse ||
+          next[next.length - 1].itemCode ||
+          next[next.length - 1].qty > 0
+        )
+      )
     ) {
+
       next.push(
         emptyRow(),
       );
+
     }
+
 
 
     setItems(next);
@@ -100,27 +239,35 @@ export default function StockEntryReceipt({
 
 
 
-  async function save() {
-
-    const saveItems =
-      items.filter(
-        (item) =>
-          item.targetWarehouse ||
-          item.itemCode ||
-          item.qty > 0,
-      );
 
 
-    console.log({
-      stockEntryName,
-      items: saveItems,
-    });
-
-
-    // 後でSupabase保存
-    // ERPNext Stock Entry作成
-
+  if (loading) {
+    return (
+      <div
+        style={{
+          padding: 12,
+        }}
+      >
+        入庫情報読込中...
+      </div>
+    );
   }
+
+
+
+  if (error) {
+    return (
+      <div
+        style={{
+          padding: 12,
+          color: '#c62828',
+        }}
+      >
+        {error}
+      </div>
+    );
+  }
+
 
 
 
@@ -128,7 +275,6 @@ export default function StockEntryReceipt({
     <div
       style={{
         padding: 12,
-        backgroundColor: '#fff',
       }}
     >
 
@@ -142,6 +288,7 @@ export default function StockEntryReceipt({
       </h3>
 
 
+
       <table
         style={{
           width: '100%',
@@ -151,42 +298,39 @@ export default function StockEntryReceipt({
       >
 
         <thead>
-          <tr
-            style={{
-              backgroundColor: '#fafafa',
-            }}
-          >
-            <th
-              style={th}
-            >
+
+          <tr>
+
+            <th style={th}>
               Target Warehouse
             </th>
 
-            <th
-              style={th}
-            >
+
+            <th style={th}>
               Item Code
             </th>
 
-            <th
-              style={th}
-            >
+
+            <th style={th}>
               Qty
             </th>
 
-            <th
-              style={th}
-            >
+
+            <th style={th}>
               操作
             </th>
+
           </tr>
+
         </thead>
+
 
 
         <tbody>
 
           {items.map(
             (item, index) => (
+
               <tr
                 key={index}
               >
@@ -210,6 +354,7 @@ export default function StockEntryReceipt({
                 </td>
 
 
+
                 <td style={td}>
 
                   <input
@@ -227,6 +372,7 @@ export default function StockEntryReceipt({
                   />
 
                 </td>
+
 
 
                 <td style={td}>
@@ -254,26 +400,30 @@ export default function StockEntryReceipt({
                 </td>
 
 
+
                 <td style={td}>
 
-                  {(
-                    item.targetWarehouse ||
-                    item.itemCode ||
-                    item.qty > 0
-                  ) && (
-                    <button
-                      onClick={() =>
-                        deleteRow(index)
-                      }
-                    >
-                      ×
-                    </button>
-                  )}
+                  {
+                    (
+                      item.targetWarehouse ||
+                      item.itemCode ||
+                      item.qty > 0
+                    ) && (
+                      <button
+                        onClick={() =>
+                          deleteRow(index)
+                        }
+                      >
+                        ×
+                      </button>
+                    )
+                  }
 
                 </td>
 
 
               </tr>
+
             ),
           )}
 
@@ -282,24 +432,11 @@ export default function StockEntryReceipt({
       </table>
 
 
-      <div
-        style={{
-          marginTop: 12,
-        }}
-      >
-
-        <button
-          onClick={save}
-        >
-          保存
-        </button>
-
-      </div>
-
-
     </div>
   );
 }
+
+
 
 
 const th = {
