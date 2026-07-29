@@ -6,6 +6,7 @@ interface Props {
   title: React.ReactNode;
   titleBackground?: string;
   titleColor?: string;
+  headerRight?: React.ReactNode;
   left: React.ReactNode;
   right: React.ReactNode;
 }
@@ -14,9 +15,11 @@ export default function MasterDetailLayout({
   title,
   titleBackground = '#2b579a',
   titleColor = '#fff',
+  headerRight,
   left,
   right,
 }: Props) {
+
   return (
     <div
       style={{
@@ -29,16 +32,23 @@ export default function MasterDetailLayout({
         overflow: 'hidden',
       }}
     >
+
       <header
         style={{
           flexShrink: 0,
           padding: '12px 16px',
           backgroundColor: titleBackground,
           color: titleColor,
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          boxShadow:
+            '0 2px 4px rgba(0,0,0,0.1)',
           zIndex: 10,
+
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
         }}
       >
+
         <h1
           style={{
             margin: 0,
@@ -48,7 +58,17 @@ export default function MasterDetailLayout({
         >
           {title}
         </h1>
+
+
+        {headerRight && (
+          <div>
+            {headerRight}
+          </div>
+        )}
+
       </header>
+
+
 
       <div
         style={{
@@ -56,36 +76,42 @@ export default function MasterDetailLayout({
           minWidth: 0,
           minHeight: 0,
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+          gridTemplateColumns:
+            'minmax(0,1fr) minmax(0,1fr)',
           gap: 12,
           paddingTop: 12,
           overflow: 'hidden',
         }}
       >
+
         <section
           style={{
-            minWidth: 0,
-            minHeight: 0,
-            height: '100%',
-            overflowY: 'auto',
-            overflowX: 'hidden',
+            minWidth:0,
+            minHeight:0,
+            height:'100%',
+            overflowY:'auto',
+            overflowX:'hidden',
           }}
         >
           {left}
         </section>
 
+
         <section
           style={{
-            minWidth: 0,
-            minHeight: 0,
-            height: '100%',
-            overflowY: 'auto',
-            overflowX: 'hidden',
+            minWidth:0,
+            minHeight:0,
+            height:'100%',
+            overflowY:'auto',
+            overflowX:'hidden',
           }}
         >
           {right}
         </section>
+
+
       </div>
+
     </div>
   );
 }
