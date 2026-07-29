@@ -10,9 +10,9 @@ import {
 
 import MasterDetailLayout from '../../../../../components/layout/MasterDetailLayout';
 
-import CustomerItemList from '../../../../../components/erp-doctype/CustomerItem/CustomerItemList';
+import ItemList from '../../../../../components/erp-doctype/Item/ItemList';
 
-import CustomerItemDetail from '../../../../../components/erp-doctype/CustomerItem/CustomerItemDetail';
+import ItemDetail from '../../../../../components/erp-doctype/Item/ItemDetail';
 
 
 
@@ -35,17 +35,17 @@ export default function CustomerItemPage() {
 
     <main
       style={{
-        position:'fixed',
-        inset:0,
-        backgroundColor:'#f3f4f6',
-        overflow:'hidden',
-        boxSizing:'border-box',
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: '#f3f4f6',
+        overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
 
       <MasterDetailLayout
 
-        title="荷主商品マスター"
+        title={`荷主商品マスター (${customerCode})`}
 
         titleBackground="#2563eb"
 
@@ -54,37 +54,29 @@ export default function CustomerItemPage() {
 
 
         left={
-
-          <CustomerItemList
-
-            customerCode={customerCode}
+          <ItemList
 
             selectedId={itemId}
 
             onSelect={setItemId}
 
           />
-
         }
 
 
 
         right={
-
-          <CustomerItemDetail
+          <ItemDetail
 
             itemId={itemId}
 
           />
-
         }
 
 
       />
 
-
     </main>
 
   );
-
 }
