@@ -3,11 +3,12 @@
 import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
-import ProjectList from '../../../components/wms/in/ProjectList';
-import ProjectDetail from '../../../components/wms/in/Detail/ProjectDetail';
+import ProjectList from '../../../components/projects/ProjectList';
+import ProjectDetail from '../../../components/projects/ProjectDetail';
 
 export default function PurchaseReceiptPage() {
-  const [projectId, setProjectId] = useState<number | null>(null);
+  const [projectId, setProjectId] =
+    useState<number | null>(null);
 
   return (
     <main
@@ -25,8 +26,8 @@ export default function PurchaseReceiptPage() {
         titleColor="#fff"
         left={
           <ProjectList
-            projectType="入庫案件"
-            onSelectProjectId={setProjectId}
+            selectedId={projectId}
+            onSelect={setProjectId}
           />
         }
         right={
