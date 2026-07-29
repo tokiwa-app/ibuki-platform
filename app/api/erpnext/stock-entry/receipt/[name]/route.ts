@@ -1,4 +1,4 @@
-import { erpnextRequest } from '../../../../../../../lib/erpnextClient';
+import { erpnextRequest } from '../../../../../../lib/erpnextClient';
 
 export const dynamic = 'force-dynamic';
 
