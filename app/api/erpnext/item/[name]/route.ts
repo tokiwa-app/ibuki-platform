@@ -11,37 +11,104 @@ import {
 
 export async function GET(
   request: NextRequest,
-  context: {
+  {
+    params,
+  }: {
     params: {
       name: string;
     };
   },
 ) {
 
+
   try {
 
 
-    const name =
+    const itemName =
       decodeURIComponent(
-        context.params.name,
+        params.name,
       );
 
 
 
     const item =
       await erpnextRequest(
-        `/api/resource/Item/${encodeURIComponent(name)}`,
+        `/api/resource/Item/${encodeURIComponent(itemName)}`,
       );
 
 
 
-    return NextResponse.json(
-      item.data ?? {},
-    );
+    const data =
+      item.data;
 
 
 
-  } catch (error) {
+    const defaults =
+      data.item_defaults ?? [];
+
+
+
+    const defaultData =
+      defaults.length > 0
+        ? defaults[0]
+        : {};
+
+
+
+    return NextResponse.json({
+
+      name:
+        data.name ?? '',
+
+
+      item_code:
+        data.item_code ?? '',
+
+
+      item_name:
+        data.item_name ?? '',
+
+
+      item_group:
+        data.item_group ?? '',
+
+
+      stock_uom:
+        data.stock_uom ?? '',
+
+
+
+      custom_customer:
+        data.custom_customer ?? '',
+
+
+
+      maintain_stock:
+        data.is_stock_item ?? 0,
+
+
+      has_batch_no:
+        data.has_batch_no ?? 0,
+
+
+      has_expiry_date:
+        data.has_expiry_date ?? 0,
+
+
+
+      company:
+        defaultData.company ?? '',
+
+
+      default_warehouse:
+        defaultData.default_warehouse ?? '',
+
+
+    });
+
+
+
+  } catch(error) {
 
 
     return NextResponse.json(
@@ -55,6 +122,7 @@ export async function GET(
         status:500,
       },
     );
+
 
   }
 
