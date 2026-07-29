@@ -5,17 +5,18 @@ import {
 } from '../../../../lib/erpnextClient';
 
 
+
 export async function GET(
   request: NextRequest,
 ) {
 
   try {
 
-const items =
-  await erpnextRequest(
-        '/api/resource/Item',
-        {
-          fields: JSON.stringify([
+
+    const items =
+      await erpnextRequest(
+        `/api/resource/Item?fields=${encodeURIComponent(
+          JSON.stringify([
             'name',
             'item_code',
             'item_name',
@@ -24,11 +25,10 @@ const items =
             'maintain_stock',
             'has_batch_no',
             'has_expiry_date',
-          ]),
-
-          limit_page_length: 1000,
-        },
+          ])
+        )}&limit_page_length=1000`
       );
+
 
 
     const itemList =
@@ -36,89 +36,112 @@ const items =
 
 
 
-    const result = await Promise.all(
+    const result =
+      await Promise.all(
 
-      itemList.map(
-        async (item: any) => {
-
-
-          let company = '';
-          let defaultWarehouse = '';
+        itemList.map(
+          async (item: any) => {
 
 
+            let company = '';
 
-          try {
-
-const detail =
-  await erpnextRequest(
-                `/api/resource/Item/${encodeURIComponent(
-                  item.name,
-                )}`,
-              );
-
-
-            const defaults =
-              detail.data?.item_defaults ?? [];
+            let defaultWarehouse = '';
 
 
 
-            if (defaults.length > 0) {
+            try {
 
-              company =
-                defaults[0].company ?? '';
 
-              defaultWarehouse =
-                defaults[0].default_warehouse ?? '';
+              const detail =
+                await erpnextRequest(
+                  `/api/resource/Item/${encodeURIComponent(
+                    item.name,
+                  )}`,
+                );
+
+
+
+              const defaults =
+                detail.data?.item_defaults ?? [];
+
+
+
+              if (defaults.length > 0) {
+
+
+                company =
+                  defaults[0].company ?? '';
+
+
+
+                defaultWarehouse =
+                  defaults[0].default_warehouse ?? '';
+
+
+              }
+
+
+            } catch {
+
+
+              // Item Default取得失敗は無視
+
 
             }
 
 
-          } catch {
 
-            // Item Default取得失敗は無視
-
-          }
+            return {
 
 
-
-          return {
-
-            name:
-              item.name,
-
-            item_code:
-              item.item_code,
-
-            item_name:
-              item.item_name,
-
-            item_group:
-              item.item_group,
-
-            stock_uom:
-              item.stock_uom,
+              name:
+                item.name,
 
 
-            company,
-
-            default_warehouse:
-              defaultWarehouse,
+              item_code:
+                item.item_code ?? '',
 
 
-            maintain_stock:
-              item.maintain_stock,
+              item_name:
+                item.item_name ?? '',
 
-            has_batch_no:
-              item.has_batch_no,
 
-            has_expiry_date:
-              item.has_expiry_date,
+              item_group:
+                item.item_group ?? '',
 
-          };
 
-        },
-      ),
-    );
+              stock_uom:
+                item.stock_uom ?? '',
+
+
+
+              company,
+
+
+              default_warehouse:
+                defaultWarehouse,
+
+
+
+              maintain_stock:
+                item.maintain_stock ?? 0,
+
+
+              has_batch_no:
+                item.has_batch_no ?? 0,
+
+
+              has_expiry_date:
+                item.has_expiry_date ?? 0,
+
+
+            };
+
+
+          },
+        ),
+
+      );
 
 
 
@@ -130,6 +153,7 @@ const detail =
 
   } catch (error) {
 
+
     return NextResponse.json(
       {
         error:
@@ -138,9 +162,10 @@ const detail =
             : 'Item取得失敗',
       },
       {
-        status:500,
+        status: 500,
       },
     );
+
 
   }
 
