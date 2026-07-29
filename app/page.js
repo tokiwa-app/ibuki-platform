@@ -35,7 +35,7 @@ export default function Home() {
           return;
         }
 
-        await loadTenants(session.user.id);
+        await loadTenants(session.user.email);
       } catch (error) {
         console.error(error);
         setMsg('ログイン状態の確認に失敗しました');
@@ -46,16 +46,18 @@ export default function Home() {
     initialize();
   }, []);
 
-  async function loadTenants(userId) {
-    setBusy(true);
-    setMsg('');
+async function loadTenants(email) {
+  setBusy(true);
+  setMsg('');
 
-    try {
-      const { data, error } = await supabase
-        .from('user_tenants')
-        .select('tenant_id')
-        .eq('user_id', userId)
-        .order('tenant_id', { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from('user_tenants')
+      .select('tenant_id')
+      .eq('email', email)
+      .order('tenant_id', { ascending: true });
+
+    ...
 
       if (error) {
         throw error;
