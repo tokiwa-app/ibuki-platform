@@ -2,37 +2,27 @@ import { erpnextRequest } from '../../../../lib/erpnextClient';
 
 export const dynamic = 'force-dynamic';
 
-
 export async function GET(
   request: Request
 ) {
-
   try {
-
     const { searchParams } =
       new URL(request.url);
-
 
     const projectId =
       searchParams.get('projectId');
 
 
-
     let path =
-      '/api/resource/Purchase Receipt?';
+      '/api/resource/Stock Entry?';
 
 
-
-    const fields =
-      [
-        'name',
-        'supplier',
-        'posting_date',
-        'status',
-        'grand_total',
-        'project'
-      ];
-
+    const fields = [
+      'name',
+      'project',
+      'stock_entry_type',
+      'posting_date',
+    ];
 
 
     path +=
@@ -45,20 +35,19 @@ export async function GET(
       '&limit_page_length=100';
 
 
-
     if (projectId) {
 
       const project =
-        `I${String(projectId).padStart(8,'0')}`;
+        `I${String(projectId).padStart(8, '0')}`;
 
 
       const filters = [
         [
-          'Purchase Receipt',
+          'Stock Entry',
           'project',
           '=',
-          project
-        ]
+          project,
+        ],
       ];
 
 
@@ -66,42 +55,46 @@ export async function GET(
         `&filters=${encodeURIComponent(
           JSON.stringify(filters)
         )}`;
-
     }
 
 
-
     path +=
-      '&order_by=posting_date desc, creation desc';
+      '&order_by=posting_date desc';
 
 
-
-    const result =
-      await erpnextRequest(
-        path
-      );
-
-
-
-    return Response.json(
-      result.data ?? []
+    console.log(
+      'STOCK ENTRY PATH:',
+      path
     );
 
 
-  } catch(error:any) {
+    const result =
+      await erpnextRequest(path);
+
+
+    return Response.json(
+      result?.data ?? []
+    );
+
+
+  } catch (error: unknown) {
+
+    console.error(
+      'Stock Entry GET error:',
+      error
+    );
 
 
     return Response.json(
       {
         error:
-          error.message ||
-          'Purchase Receipt取得失敗'
+          error instanceof Error
+            ? error.message
+            : 'Stock Entry取得失敗',
       },
       {
-        status:500
+        status: 500,
       }
     );
-
   }
-
 }

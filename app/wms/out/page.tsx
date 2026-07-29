@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import DeliveryDetail from '../../../components/wms/DeliveryDetail';
-import DeliveryList from '../../../components/wms/DeliveryList';
+import DeliveryList from '../../../components/wms/out/DeliveryList';
 
 export default function WmsPage() {
   const [selectedName, setSelectedName] = useState('');
