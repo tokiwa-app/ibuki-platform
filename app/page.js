@@ -1,96 +1,153 @@
-// app/page.js
 'use client';
-import Head from 'next/head';
-import { useState } from 'react';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../lib/supabaseClient';
 
 const TENANT_KEY = 'active_tenant_id';
 
 export default function Home() {
-  const [loginId, setLoginId] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState('');
+  const router = useRouter();
 
-  const [step, setStep] = useState('login'); // 'login' | 'tenant'
+  const [busy, setBusy] = useState(true);
+  const [msg, setMsg] = useState('');
+  const [step, setStep] = useState('login');
+
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState('');
 
-  function saveTenantAndGo(tenantId) {
-    if (typeof window !== 'undefined') {
-      if (tenantId) localStorage.setItem(TENANT_KEY, tenantId);
-      else localStorage.removeItem(TENANT_KEY);
-    }
-    location.href = '/dashboard';
-  }
+  useEffect(() => {
+    document.title = 'Ibuki Platform';
 
-  async function onForgotPassword() {
+    async function initialize() {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!session?.user?.id) {
+          setBusy(false);
+          return;
+        }
+
+        await loadTenants(session.user.id);
+      } catch (error) {
+        console.error(error);
+        setMsg('ログイン状態の確認に失敗しました');
+        setBusy(false);
+      }
+    }
+
+    initialize();
+  }, []);
+
+  async function loadTenants(userId) {
     setBusy(true);
     setMsg('');
-
-    const { error } = await supabase.auth.resetPasswordForEmail(loginId, {
-      redirectTo: 'https://ibuki-platform.vercel.app/reset-password',
-    });
-
-    setBusy(false);
-    setMsg(error ? `送信失敗: ${error.message}` : 'リセットメールを送信しました');
-  }
-
-  async function onSubmit(e) {
-    e.preventDefault();
-    setBusy(true);
-    setMsg('');
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: loginId,
-      password,
-    });
-
-    if (error) {
-      setMsg('メールアドレスまたはパスワードが正しくありません');
-      setBusy(false);
-      return;
-    }
-
-    const uid = data?.user?.id;
-    if (!uid) {
-      setMsg('ログインに失敗しました（ユーザー情報が取得できません）');
-      setBusy(false);
-      return;
-    }
 
     try {
-      const { data: list, error: tErr } = await supabase
+      const { data, error } = await supabase
         .from('user_tenants')
         .select('tenant_id')
-        .eq('user_id', uid)
+        .eq('user_id', userId)
         .order('tenant_id', { ascending: true });
 
-      if (tErr) throw tErr;
+      if (error) {
+        throw error;
+      }
 
-      const arr = list ?? [];
-      if (arr.length === 0) {
-        setMsg('利用可能なテナントがありません');
-        setBusy(false);
+      const tenantList = data ?? [];
+
+      if (tenantList.length === 0) {
+        localStorage.removeItem(TENANT_KEY);
+        setMsg(
+          'このGoogleアカウントに利用可能なテナントが登録されていません。'
+        );
+        setStep('login');
         return;
       }
 
-      if (arr.length === 1) {
-        saveTenantAndGo(arr[0].tenant_id);
+      if (tenantList.length === 1) {
+        saveTenantAndGo(tenantList[0].tenant_id);
         return;
       }
 
-      setTenants(arr);
+      const savedTenantId = localStorage.getItem(TENANT_KEY) ?? '';
 
-      const saved =
-        typeof window !== 'undefined' ? localStorage.getItem(TENANT_KEY) || '' : '';
-      const savedValid = saved && arr.some((t) => t.tenant_id === saved);
-      setSelectedTenant(savedValid ? saved : arr[0].tenant_id);
+      const savedTenantIsValid = tenantList.some(
+        (tenant) => tenant.tenant_id === savedTenantId
+      );
 
+      setTenants(tenantList);
+      setSelectedTenant(
+        savedTenantIsValid
+          ? savedTenantId
+          : tenantList[0].tenant_id
+      );
       setStep('tenant');
-    } catch (e2) {
-      console.error(e2);
-      setMsg('テナント取得に失敗しました');
+    } catch (error) {
+      console.error(error);
+      setMsg('テナント情報の取得に失敗しました');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function saveTenantAndGo(tenantId) {
+    if (!tenantId) {
+      setMsg('テナントを選択してください');
+      return;
+    }
+
+    localStorage.setItem(TENANT_KEY, tenantId);
+    router.replace('/dashboard');
+  }
+
+  async function signInWithGoogle() {
+    setBusy(true);
+    setMsg('');
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error(error);
+      setMsg(`Googleログインに失敗しました: ${error.message}`);
+      setBusy(false);
+    }
+  }
+
+  async function signOut() {
+    setBusy(true);
+    setMsg('');
+
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        throw error;
+      }
+
+      localStorage.removeItem(TENANT_KEY);
+      setTenants([]);
+      setSelectedTenant('');
+      setStep('login');
+    } catch (error) {
+      console.error(error);
+      setMsg(`ログアウトに失敗しました: ${error.message}`);
     } finally {
       setBusy(false);
     }
@@ -99,45 +156,43 @@ export default function Home() {
   return (
     <main
       style={{
+        width: 'calc(100% - 32px)',
         maxWidth: 480,
         margin: '48px auto',
         fontFamily: 'system-ui, sans-serif',
         textAlign: 'center',
       }}
     >
-      <Head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+HK:wght@500;600&display=swap"
-          rel="stylesheet"
-        />
-        <title>Ibuki Platform</title>
-      </Head>
-
       <h1
         style={{
-          fontSize: '5.0rem',
+          fontSize: 'clamp(3rem, 12vw, 5rem)',
           fontWeight: 700,
           marginTop: 8,
           marginBottom: 24,
           letterSpacing: '1px',
           display: 'flex',
+          flexWrap: 'wrap',
           justifyContent: 'center',
+          alignItems: 'center',
           gap: '12px',
         }}
       >
-        <span style={{ fontFamily: "'M PLUS Rounded 1c'", fontWeight: 800, letterSpacing: '0.5px' }}>
-          Ibuki
-        </span>
         <span
           style={{
-            fontFamily: "'Noto Sans HK'",
+            fontFamily: "'M PLUS Rounded 1c', system-ui, sans-serif",
+            fontWeight: 800,
+            letterSpacing: '0.5px',
+          }}
+        >
+          Ibuki
+        </span>
+
+        <span
+          style={{
+            fontFamily: "'Noto Sans HK', system-ui, sans-serif",
             fontStyle: 'italic',
             fontWeight: 600,
-            letterSpacing: '0px',
+            letterSpacing: 0,
             transform: 'translateY(-3px)',
           }}
         >
@@ -147,75 +202,131 @@ export default function Home() {
 
       <img
         src="/ibuki-header.png"
-        alt="ibuki platform"
-        style={{ width: '100%', maxWidth: 420, margin: '0 auto 32px', display: 'block' }}
+        alt="Ibuki Platform"
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          height: 'auto',
+          margin: '0 auto 32px',
+          display: 'block',
+        }}
       />
 
-      {step === 'login' ? (
+      {busy && step === 'login' ? (
+        <p style={{ color: '#555' }}>ログイン状態を確認しています…</p>
+      ) : step === 'login' ? (
         <>
-          <p style={{ color: '#555', marginBottom: 16 }}>
-            メールアドレスとパスワードを入力してログインしてください。
+          <p
+            style={{
+              color: '#555',
+              marginBottom: 20,
+            }}
+          >
+            Googleアカウントを使用してログインしてください。
           </p>
-
-          <form onSubmit={onSubmit}>
-            <input
-              type="email"
-              placeholder="mail@example.com"
-              value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
-              autoFocus
-              style={{ width: '100%', padding: 10, fontSize: 16, marginBottom: 8, boxSizing: 'border-box' }}
-            />
-
-            <input
-              type="password"
-              placeholder="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{ width: '100%', padding: 10, fontSize: 16, marginBottom: 12, boxSizing: 'border-box' }}
-            />
-
-            <button type="submit" disabled={busy || !loginId || !password} style={{ width: '100%', padding: 10, fontSize: 16 }}>
-              {busy ? '送信中…' : 'ログイン'}
-            </button>
-          </form>
 
           <button
             type="button"
-            onClick={onForgotPassword}
-            disabled={busy || !loginId}
-            style={{ width: '100%', padding: 10, fontSize: 14, marginTop: 8 }}
+            onClick={signInWithGoogle}
+            disabled={busy}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              fontSize: 16,
+              fontWeight: 600,
+              color: '#202124',
+              backgroundColor: '#fff',
+              border: '1px solid #dadce0',
+              borderRadius: 6,
+              cursor: busy ? 'not-allowed' : 'pointer',
+              opacity: busy ? 0.7 : 1,
+              boxSizing: 'border-box',
+            }}
           >
-            パスワードを忘れた
+            {busy ? 'Googleへ移動しています…' : 'Googleでログイン'}
           </button>
         </>
       ) : (
         <>
-          <p style={{ color: '#555', marginBottom: 16 }}>テナントを選択して続行してください。</p>
+          <p
+            style={{
+              color: '#555',
+              marginBottom: 16,
+            }}
+          >
+            利用するテナントを選択してください。
+          </p>
 
           <select
             value={selectedTenant}
-            onChange={(e) => setSelectedTenant(e.target.value)}
-            style={{ width: '100%', padding: 10, fontSize: 16, marginBottom: 12, boxSizing: 'border-box' }}
+            onChange={(event) =>
+              setSelectedTenant(event.target.value)
+            }
+            disabled={busy}
+            style={{
+              width: '100%',
+              padding: 10,
+              fontSize: 16,
+              marginBottom: 12,
+              boxSizing: 'border-box',
+            }}
           >
-            {tenants.map((t) => (
-              <option key={t.tenant_id} value={t.tenant_id}>
-                {t.tenant_id}
+            {tenants.map((tenant) => (
+              <option
+                key={tenant.tenant_id}
+                value={tenant.tenant_id}
+              >
+                {tenant.tenant_id}
               </option>
             ))}
           </select>
 
           <button
+            type="button"
             onClick={() => saveTenantAndGo(selectedTenant)}
             disabled={busy || !selectedTenant}
-            style={{ width: '100%', padding: 10, fontSize: 16 }}
+            style={{
+              width: '100%',
+              padding: 10,
+              fontSize: 16,
+              cursor:
+                busy || !selectedTenant
+                  ? 'not-allowed'
+                  : 'pointer',
+            }}
           >
             {busy ? '処理中…' : 'このテナントで続行'}
+          </button>
+
+          <button
+            type="button"
+            onClick={signOut}
+            disabled={busy}
+            style={{
+              width: '100%',
+              padding: 10,
+              fontSize: 14,
+              marginTop: 8,
+              cursor: busy ? 'not-allowed' : 'pointer',
+            }}
+          >
+            別のGoogleアカウントを使う
           </button>
         </>
       )}
 
-      {msg && <p style={{ color: '#c00', marginTop: 12 }}>{msg}</p>}
+      {msg && (
+        <p
+          role="alert"
+          style={{
+            color: '#c00',
+            marginTop: 16,
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {msg}
+        </p>
+      )}
     </main>
   );
 }
