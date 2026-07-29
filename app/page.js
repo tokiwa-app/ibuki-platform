@@ -91,8 +91,14 @@ export default function Home() {
       );
       setStep('tenant');
     } catch (error) {
-      console.error(error);
-      setMsg('テナント情報の取得に失敗しました');
+  console.error('loadTenants error:', error);
+  console.error('message:', error?.message);
+  console.error('details:', error?.details);
+  console.error('hint:', error?.hint);
+  console.error('code:', error?.code);
+
+  setMsg('テナント情報の取得に失敗しました');
+}
     } finally {
       setBusy(false);
     }
