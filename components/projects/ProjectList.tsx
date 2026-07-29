@@ -19,12 +19,17 @@ interface Project {
 interface ProjectListProps {
   selectedId: number | null;
   onSelect: (id: number) => void;
+
+  // 入庫案件、出庫案件など画面側から指定
+  projectType?: string;
+
   refreshTrigger?: number;
 }
 
 export default function ProjectList({
   selectedId,
   onSelect,
+  projectType,
   refreshTrigger,
 }: ProjectListProps) {
   const [projects, setProjects] =
@@ -42,10 +47,7 @@ export default function ProjectList({
       setError('');
 
       try {
-        const {
-          data,
-          error,
-        } = await supabase
+        let query = supabase
           .from('projects')
           .select(`
             id,
@@ -67,6 +69,20 @@ export default function ProjectList({
           );
 
 
+        if (projectType) {
+          query = query.eq(
+            'project_type',
+            projectType,
+          );
+        }
+
+
+        const {
+          data,
+          error,
+        } = await query;
+
+
         if (error) {
           throw error;
         }
@@ -79,9 +95,11 @@ export default function ProjectList({
       } catch (e) {
 
         console.error(
-          'projects取得失敗',
+          'プロジェクト取得失敗',
           e,
         );
+
+        setProjects([]);
 
         setError(
           e instanceof Error
@@ -99,12 +117,16 @@ export default function ProjectList({
 
     void fetchProjects();
 
-  }, [refreshTrigger]);
+  }, [
+    projectType,
+    refreshTrigger,
+  ]);
 
 
   return (
     <div
       style={{
+        width: '100%',
         height: '100%',
         backgroundColor: '#fff',
         display: 'flex',
@@ -117,10 +139,12 @@ export default function ProjectList({
           padding: 12,
           borderBottom:
             '1px solid #ddd',
+          fontSize: 14,
           fontWeight: 'bold',
+          backgroundColor: '#fafafa',
         }}
       >
-        プロジェクト一覧
+        {projectType ?? 'プロジェクト'}一覧
       </div>
 
 
@@ -166,10 +190,10 @@ export default function ProjectList({
                 style={{
                   display: 'grid',
                   gridTemplateColumns:
-                    '80px 120px 120px 1fr',
+                    '100px 120px 120px 1fr',
                   gap: 8,
                   padding:
-                    '8px 12px',
+                    '10px 12px',
                   borderBottom:
                     '1px solid #eee',
                   cursor: 'pointer',
@@ -197,21 +221,19 @@ export default function ProjectList({
 
                 <div
                   style={{
-                    fontWeight:
-                      'bold',
+                    fontWeight: 'bold',
                   }}
                 >
                   {project.project_name}
                 </div>
 
-
               </div>
             );
-
           })}
 
 
         {!loading &&
+          !error &&
           projects.length === 0 && (
             <div
               style={{
@@ -219,12 +241,11 @@ export default function ProjectList({
                 color: '#777',
               }}
             >
-              プロジェクトがありません
+              案件がありません
             </div>
           )}
 
       </div>
-
     </div>
   );
 }
