@@ -6,21 +6,25 @@ import {
 } from 'react';
 
 interface StockEntryReceiptProps {
-  erpProjectId: string | null;
+  stockEntryName: string | null;
 }
 
 interface StockEntry {
   name: string;
   stock_entry_type?: string;
   posting_date?: string;
+  posting_time?: string;
   status?: string;
+  project?: string;
+  creation?: string;
+  modified?: string;
 }
 
 export default function StockEntryReceipt({
-  erpProjectId,
+  stockEntryName,
 }: StockEntryReceiptProps) {
-  const [entries, setEntries] =
-    useState<StockEntry[]>([]);
+  const [entry, setEntry] =
+    useState<StockEntry | null>(null);
 
   const [loading, setLoading] =
     useState(false);
@@ -30,64 +34,75 @@ export default function StockEntryReceipt({
 
 
   useEffect(() => {
-    if (!erpProjectId) {
-      setEntries([]);
+    if (!stockEntryName) {
+      setEntry(null);
+      setError('');
       return;
     }
 
 
-    async function fetchStockEntryReceipt() {
+    async function fetchStockEntry() {
       setLoading(true);
       setError('');
 
+
       try {
         const response = await fetch(
-          `/api/erpnext/stock-entry?erpProjectId=${encodeURIComponent(
-            erpProjectId,
+          `/api/erpnext/stock-entry/receipt/${encodeURIComponent(
+            stockEntryName,
           )}`,
           {
+            method: 'GET',
             cache: 'no-store',
           },
         );
 
 
-        const result =
-          await response.json();
+        const text =
+          await response.text();
 
 
-        if (!response.ok) {
+        let result: unknown;
+
+
+        try {
+          result = JSON.parse(text);
+        } catch {
           throw new Error(
-            result?.error ??
-              'Stock Entry取得失敗',
+            `APIがJSONを返していません。status=${response.status}`,
           );
         }
 
 
-        const data =
-          Array.isArray(result)
-            ? result
-            : result.data ?? [];
+        if (!response.ok) {
+          const message =
+            typeof result === 'object' &&
+            result !== null &&
+            'error' in result &&
+            typeof result.error === 'string'
+              ? result.error
+              : 'Stock Entry取得失敗';
 
 
-        // 入庫系だけ
-        setEntries(
-          data.filter(
-            (entry: StockEntry) =>
-              entry.stock_entry_type ===
-              'Material Receipt',
-          ),
+          throw new Error(message);
+        }
+
+
+        setEntry(
+          result as StockEntry,
         );
 
 
       } catch (e) {
 
-        setEntries([]);
+        setEntry(null);
 
         setError(
           e instanceof Error
             ? e.message
             : 'Stock Entry取得失敗',
         );
+
 
       } finally {
 
@@ -97,15 +112,20 @@ export default function StockEntryReceipt({
     }
 
 
-    void fetchStockEntryReceipt();
+    void fetchStockEntry();
 
-  }, [erpProjectId]);
+  }, [stockEntryName]);
 
 
-  if (!erpProjectId) {
+  if (!stockEntryName) {
     return (
-      <div style={{ padding: 12 }}>
-        ERPプロジェクト未連携
+      <div
+        style={{
+          padding: 12,
+          color: '#777',
+        }}
+      >
+        入庫登録はありません。
       </div>
     );
   }
@@ -134,10 +154,26 @@ export default function StockEntryReceipt({
   }
 
 
+  if (!entry) {
+    return (
+      <div
+        style={{
+          padding: 12,
+          color: '#777',
+        }}
+      >
+        入庫情報がありません。
+      </div>
+    );
+  }
+
+
   return (
     <div
       style={{
         padding: 12,
+        borderBottom:
+          '1px solid #ddd',
       }}
     >
       <h3
@@ -150,46 +186,46 @@ export default function StockEntryReceipt({
       </h3>
 
 
-      {entries.length === 0 ? (
-        <div
-          style={{
-            color: '#777',
-          }}
-        >
-          入庫履歴はありません。
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            '140px 1fr',
+          gap: 8,
+          fontSize: 14,
+        }}
+      >
+        <div>番号</div>
+        <div>
+          {entry.name}
         </div>
-      ) : (
 
-        entries.map((entry) => (
-          <div
-            key={entry.name}
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                '180px 160px 120px',
-              gap: 8,
-              padding: 8,
-              borderBottom:
-                '1px solid #eee',
-            }}
-          >
-            <div>
-              {entry.name}
-            </div>
 
-            <div>
-              {entry.stock_entry_type}
-            </div>
+        <div>入庫タイプ</div>
+        <div>
+          {entry.stock_entry_type ?? '-'}
+        </div>
 
-            <div>
-              {entry.posting_date ?? '-'}
-            </div>
 
-          </div>
-        ))
+        <div>登録日</div>
+        <div>
+          {entry.posting_date ?? '-'}
+        </div>
 
-      )}
 
+        <div>状態</div>
+        <div>
+          {entry.status ?? '-'}
+        </div>
+
+
+        <div>Project</div>
+        <div>
+          {entry.project ?? '-'}
+        </div>
+
+
+      </div>
     </div>
   );
 }
