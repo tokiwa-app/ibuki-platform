@@ -1,8 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
-import EditableGrid from '../../../grid/EditableGrid';
+import { useState, useEffect } from 'react';
 import { updateProject } from '../../../supabase/projects/updateProject';
 
 interface Project {
@@ -11,7 +9,6 @@ interface Project {
   customer: string | null;
   customer_name: string | null;
   expected_start_date: string | null;
-  project_type?: string | null;
 }
 
 interface ProjectListProps {
@@ -24,120 +21,51 @@ interface ProjectListProps {
 
 export default function ProjectList({
   initialProjects,
-  loading: initialLoading,
-  error: initialError,
+  loading,
+  error,
   selectedId,
   onSelect,
 }: ProjectListProps) {
-  // 1. すべての Hooks はコンポーネントのトップレベルで確実に同じ順序で呼び出す
+  // すべての Hooks はコンポーネントの最上部で一貫して呼び出す
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [loading, setLoading] = useState<boolean>(initialLoading);
-  const [error, setError] = useState<string>(initialError);
 
-  // props の変更をステートに同期
   useEffect(() => {
     setProjects(initialProjects);
   }, [initialProjects]);
 
-  useEffect(() => {
-    setLoading(initialLoading);
-  }, [initialLoading]);
+  // 入力値変更時のハンドラー
+  const handleInputChange = async (id: number, field: keyof Project, value: string) => {
+    const updatedProjects = [...projects];
+    const targetIndex = updatedProjects.findIndex((p) => p.id === id);
+    if (targetIndex === -1) return;
 
-  useEffect(() => {
-    setError(initialError);
-  }, [initialError]);
+    const updatedRow = { ...updatedProjects[targetIndex], [field]: value };
+    updatedProjects[targetIndex] = updatedRow;
+    setProjects(updatedProjects);
 
-  // カラム定義
-  const columnDefs: ColDef<Project>[] = [
-    {
-      field: 'expected_start_date',
-      headerName: '予定開始日',
-      width: 140,
-      editable: true,
-      valueFormatter: (params) => {
-        if (!params.value) return '';
-        return new Date(params.value).toLocaleDateString('ja-JP');
-      },
-    },
-    {
-      field: 'customer',
-      headerName: '顧客コード',
-      width: 180,
-      editable: true,
-    },
-    {
-      field: 'customer_name',
-      headerName: '顧客名',
-      width: 250,
-      editable: false,
-    },
-    {
-      field: 'project_name',
-      headerName: '案件名',
-      flex: 1,
-      editable: true,
-    },
-  ];
-
-  // セル値変更時のハンドラー
-  const handleCellValueChanged = useCallback(
-    async (event: CellValueChangedEvent<Project>) => {
-      if (!event.data) return;
-
-      const field = event.colDef.field;
-      if (!field) return;
-
-      if (event.oldValue === event.newValue) {
-        return;
-      }
-
-      const updatedProjects = [...projects];
-      const targetIndex = updatedProjects.findIndex((p) => p.id === event.data!.id);
-      if (targetIndex === -1) return;
-
-      const updatedRow = { ...updatedProjects[targetIndex] };
-      updatedRow[field as keyof Project] = event.newValue;
-
-      // 顧客コード変更時の追加フェッチ
-      if (field === 'customer') {
-        try {
-          const res = await fetch(
-            `/api/erpnext/customer/${encodeURIComponent(
-              String(event.newValue),
-            )}`,
-          );
-
-          if (!res.ok) {
-            throw new Error('顧客が見つかりません');
-          }
-
+    // 顧客コード変更時の外部API連携
+    if (field === 'customer') {
+      try {
+        const res = await fetch(`/api/erpnext/customer/${encodeURIComponent(value)}`);
+        if (res.ok) {
           const customer = await res.json();
           updatedRow.customer_name = customer.customer_name;
-        } catch (err) {
-          console.error(err);
-          updatedRow.customer = event.oldValue;
-          updatedRow.customer_name = null;
-          updatedProjects[targetIndex] = updatedRow;
-          setProjects(updatedProjects);
-          return;
+          setProjects([...updatedProjects]);
         }
-      }
-
-      try {
-        await updateProject(updatedRow);
-        updatedProjects[targetIndex] = updatedRow;
-        setProjects(updatedProjects);
       } catch (err) {
-        console.error('保存失敗', err);
-        updatedRow[field as keyof Project] = event.oldValue;
-        updatedProjects[targetIndex] = updatedRow;
-        setProjects(updatedProjects);
+        console.error('顧客情報の取得に失敗しました', err);
       }
-    },
-    [projects]
-  );
+    }
 
-  // ❌ 早期リターン（if文での条件分岐）は「すべての Hooks の宣言が終わった後」に記述する
+    // DB（Supabase）の更新
+    try {
+      await updateProject(updatedRow);
+    } catch (err) {
+      console.error('プロジェクトの保存に失敗しました', err);
+    }
+  };
+
+  // 条件分岐による早期リターンはすべての Hooks 宣言のあとに記述する
   if (loading) {
     return <div className="p-4 text-gray-500">読み込み中...</div>;
   }
@@ -147,17 +75,59 @@ export default function ProjectList({
   }
 
   return (
-    <div className="w-full h-full">
-      <EditableGrid<Project>
-        rowData={projects}
-        columnDefs={columnDefs}
-        loading={loading}
-        error={error}
-        selectedId={selectedId}
-        onSelect={onSelect}
-        onCellValueChanged={handleCellValueChanged}
-        getRowId={(params) => params.data.id.toString()}
-      />
+    <div className="w-full overflow-x-auto border border-gray-200 rounded-lg">
+      <table className="w-full border-collapse text-left text-sm text-gray-700">
+        <thead className="bg-gray-100 border-b border-gray-200">
+          <tr>
+            <th className="p-3 font-semibold">予定開始日</th>
+            <th className="p-3 font-semibold">顧客コード</th>
+            <th className="p-3 font-semibold">顧客名</th>
+            <th className="p-3 font-semibold">案件名</th>
+          </tr>
+        </thead>
+        <tbody>
+          {projects.map((project) => {
+            const isSelected = project.id === selectedId;
+            return (
+              <tr
+                key={project.id}
+                onClick={() => onSelect(project.id)}
+                className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                  isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+                }`}
+              >
+                <td className="p-2">
+                  <input
+                    type="date"
+                    value={project.expected_start_date ? project.expected_start_date.split('T')[0] : ''}
+                    onChange={(e) => handleInputChange(project.id, 'expected_start_date', e.target.value)}
+                    className="w-full p-1 border border-gray-300 rounded bg-white"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    type="text"
+                    value={project.customer || ''}
+                    onChange={(e) => handleInputChange(project.id, 'customer', e.target.value)}
+                    className="w-full p-1 border border-gray-300 rounded bg-white"
+                  />
+                </td>
+                <td className="p-2 text-gray-500">
+                  {project.customer_name || '-'}
+                </td>
+                <td className="p-2">
+                  <input
+                    type="text"
+                    value={project.project_name || ''}
+                    onChange={(e) => handleInputChange(project.id, 'project_name', e.target.value)}
+                    className="w-full p-1 border border-gray-300 rounded bg-white"
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
