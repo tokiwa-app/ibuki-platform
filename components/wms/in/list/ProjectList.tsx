@@ -1,14 +1,7 @@
 'use client';
 
-import { AgGridReact } from 'ag-grid-react';
-import {
-  ColDef,
-  CellValueChangedEvent,
-} from 'ag-grid-community';
-
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-quartz.css';
-
+import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
+import EditableGrid from '../ag-grid/EditableGrid';
 import { updateProject } from '../../../supabase/projects/updateProject';
 
 interface Project {
@@ -42,7 +35,6 @@ export default function ProjectList({
       editable: true,
       valueFormatter: (params) => {
         if (!params.value) return '';
-
         return new Date(params.value).toLocaleDateString('ja-JP');
       },
     },
@@ -72,7 +64,6 @@ export default function ProjectList({
     if (!event.data) return;
 
     const field = event.colDef.field;
-
     if (!field) return;
 
     if (event.oldValue === event.newValue) {
@@ -92,9 +83,7 @@ export default function ProjectList({
         }
 
         const customer = await res.json();
-
-        event.data.customer_name =
-          customer.customer_name;
+        event.data.customer_name = customer.customer_name;
 
         event.api.refreshCells({
           rowNodes: [event.node],
@@ -103,11 +92,7 @@ export default function ProjectList({
       } catch (error) {
         console.error(error);
 
-        event.node.setDataValue(
-          'customer',
-          event.oldValue,
-        );
-
+        event.node.setDataValue('customer', event.oldValue);
         event.data.customer_name = null;
 
         event.api.refreshCells({
@@ -124,65 +109,20 @@ export default function ProjectList({
     } catch (error) {
       console.error('保存失敗', error);
 
-      event.node.setDataValue(
-        field,
-        event.oldValue,
-      );
+      event.node.setDataValue(field, event.oldValue);
     }
   }
 
-  if (loading) {
-    return <div style={{ padding: 16 }}>案件読込中...</div>;
-  }
-
-  if (error) {
-    return (
-      <div
-        style={{
-          padding: 16,
-          color: '#c62828',
-        }}
-      >
-        {error}
-      </div>
-    );
-  }
-
   return (
-    <div
-      className="ag-theme-quartz"
-      style={{
-        height: '100%',
-        width: '100%',
-      }}
-    >
-      <AgGridReact<Project>
-        rowData={projects}
-        columnDefs={columnDefs}
-        enableCellTextSelection
-        enableRangeSelection
-        copyHeadersToClipboard={false}
-        defaultColDef={{
-          sortable: true,
-          filter: true,
-          resizable: true,
-        }}
-        rowSelection="single"
-        getRowId={(params) =>
-          params.data.id.toString()
-        }
-        onRowClicked={(event) => {
-          if (event.data) {
-            onSelect(event.data.id);
-          }
-        }}
-        onCellValueChanged={handleCellValueChanged}
-        getRowClass={(params) =>
-          params.data?.id === selectedId
-            ? 'selected-row'
-            : ''
-        }
-      />
-    </div>
+    <EditableGrid<Project>
+      rowData={projects}
+      columnDefs={columnDefs}
+      loading={loading}
+      error={error}
+      selectedId={selectedId}
+      onSelect={onSelect}
+      onCellValueChanged={handleCellValueChanged}
+      getRowId={(params) => params.data.id.toString()}
+    />
   );
 }
