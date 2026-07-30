@@ -21,8 +21,8 @@ interface Project {
 export default function PurchaseReceiptPage() {
   const [projectId, setProjectId] = useState<number | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState<boolean>(true); // 初期値を true にしてデータ取得待ちを明示
+  const [error, setError] = useState<string>('');
 
   useEffect(() => {
     async function fetchProjects() {
@@ -31,7 +31,7 @@ export default function PurchaseReceiptPage() {
 
       try {
         const data = await getProjects('入庫案件');
-        // 配列であることを保証してセット（Cannot read properties of undefined 対策）
+        // 必ず配列であることを保証する
         setProjects(Array.isArray(data) ? data : []);
       } catch (e) {
         setProjects([]);
@@ -77,7 +77,7 @@ export default function PurchaseReceiptPage() {
         }
         left={
           <ProjectList
-            projects={projects}
+            projects={Array.isArray(projects) ? projects : []} // 二重の安全ガード
             loading={loading}
             error={error}
             selectedId={projectId}
