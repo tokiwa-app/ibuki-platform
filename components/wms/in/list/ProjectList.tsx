@@ -18,6 +18,8 @@ interface ProjectListProps {
   error: string;
   selectedId: number | null;
   onSelect: (id: number) => void;
+  // データ全体を更新するためのコールバックを親から受け取る想定
+  onProjectsChange?: (newProjects: Project[]) => void;
 }
 
 export default function ProjectList({
@@ -26,6 +28,7 @@ export default function ProjectList({
   error,
   selectedId,
   onSelect,
+  onProjectsChange,
 }: ProjectListProps) {
   const columnDefs: ColDef<Project>[] = [
     {
@@ -70,6 +73,14 @@ export default function ProjectList({
       return;
     }
 
+    let updatedProjects = [...projects];
+    const targetIndex = updatedProjects.findIndex((p) => p.id === event.data!.id);
+    if (targetIndex === -1) return;
+
+    // データのコピーを作成
+    const updatedRow = { ...updatedProjects[targetIndex] };
+    updatedRow[field as keyof Project] = event.newValue;
+
     if (field === 'customer') {
       try {
         const res = await fetch(
@@ -83,33 +94,29 @@ export default function ProjectList({
         }
 
         const customer = await res.json();
-        event.data.customer_name = customer.customer_name;
-
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
+        updatedRow.customer_name = customer.customer_name;
       } catch (error) {
         console.error(error);
-
-        event.node.setDataValue('customer', event.oldValue);
-        event.data.customer_name = null;
-
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
-
+        // エラー時は元の値に戻す
+        updatedRow.customer = event.oldValue;
+        updatedRow.customer_name = null;
+        
+        updatedProjects[targetIndex] = updatedRow;
+        if (onProjectsChange) onProjectsChange(updatedProjects);
         return;
       }
     }
 
     try {
-      await updateProject(event.data);
+      await updateProject(updatedRow);
+      updatedProjects[targetIndex] = updatedRow;
+      if (onProjectsChange) onProjectsChange(updatedProjects);
     } catch (error) {
       console.error('保存失敗', error);
-
-      event.node.setDataValue(field, event.oldValue);
+      // 失敗時は元の値に戻す
+      updatedRow[field as keyof Project] = event.oldValue;
+      updatedProjects[targetIndex] = updatedRow;
+      if (onProjectsChange) onProjectsChange(updatedProjects);
     }
   }
 
