@@ -1,17 +1,13 @@
 import { supabase } from "../../../lib/supabaseClient";
 
-export async function updateProjectField<
-  K extends keyof Project
->(
-  id: number,
-  field: K,
-  value: Project[K],
+export async function updateProject<T extends { id: number }>(
+  project: T,
 ) {
+  const { id, ...data } = project;
+
   const { error } = await supabase
     .from("projects")
-    .update({
-      [field]: value,
-    })
+    .update(data)
     .eq("id", id);
 
   if (error) {
