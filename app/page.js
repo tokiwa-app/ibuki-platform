@@ -47,57 +47,64 @@ export default function Home() {
   }, []);
 
   async function loadTenants(email) {
-    setBusy(true);
-    setMsg('');
+  setBusy(true);
+  setMsg('');
 
-    try {
-      const { data, error } = await supabase
-        .from('user_tenants')
-        .select('tenant_id')
-        .eq('email', email)
-        .order('tenant_id', { ascending: true });
+  try {
+    console.log('==========================');
+    console.log('loadTenants');
+    console.log('email =', email);
 
-      if (error) {
-        throw error;
-      }
+    const { data, error } = await supabase
+      .from('user_tenants')
+      .select('*')
+      .eq('email', email);
 
-      const tenantList = data ?? [];
+    console.log('error =', error);
+    console.log('data =', data);
 
-      if (tenantList.length === 0) {
-        localStorage.removeItem(TENANT_KEY);
-        setMsg(
-          'このGoogleアカウントに利用可能なテナントが登録されていません。'
-        );
-        setStep('login');
-        return;
-      }
-
-      if (tenantList.length === 1) {
-        saveTenantAndGo(tenantList[0].tenant_id);
-        return;
-      }
-
-      const savedTenantId = localStorage.getItem(TENANT_KEY) ?? '';
-
-      const savedTenantIsValid = tenantList.some(
-        (tenant) => tenant.tenant_id === savedTenantId
-      );
-
-      setTenants(tenantList);
-      setSelectedTenant(
-        savedTenantIsValid
-          ? savedTenantId
-          : tenantList[0].tenant_id
-      );
-      setStep('tenant');
-    } catch (error) {
-      console.error(error);
-      setMsg('テナント情報の取得に失敗しました');
-    } finally {
-      setBusy(false);
+    if (error) {
+      throw error;
     }
-  }
 
+    const tenantList = data ?? [];
+
+    console.log('tenantList =', tenantList);
+
+    if (tenantList.length === 0) {
+      localStorage.removeItem(TENANT_KEY);
+      setMsg(
+        'このGoogleアカウントに利用可能なテナントが登録されていません。'
+      );
+      setStep('login');
+      return;
+    }
+
+    if (tenantList.length === 1) {
+      saveTenantAndGo(tenantList[0].tenant_id);
+      return;
+    }
+
+    const savedTenantId = localStorage.getItem(TENANT_KEY) ?? '';
+
+    const savedTenantIsValid = tenantList.some(
+      (tenant) => tenant.tenant_id === savedTenantId
+    );
+
+    setTenants(tenantList);
+    setSelectedTenant(
+      savedTenantIsValid
+        ? savedTenantId
+        : tenantList[0].tenant_id
+    );
+    setStep('tenant');
+  } catch (error) {
+    console.error('loadTenants error =', error);
+    setMsg('テナント情報の取得に失敗しました');
+  } finally {
+    setBusy(false);
+  }
+}
   function saveTenantAndGo(tenantId) {
     if (!tenantId) {
       setMsg('テナントを選択してください');
