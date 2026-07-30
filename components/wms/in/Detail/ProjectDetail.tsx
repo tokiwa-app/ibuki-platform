@@ -1,188 +1,212 @@
 'use client';
 
-import { AgGridReact } from 'ag-grid-react';
 import {
-  ColDef,
-  CellValueChangedEvent,
-} from 'ag-grid-community';
+  useEffect,
+  useState,
+} from 'react';
 
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-quartz.css';
+import PurchaseReceiptDetail from '../../../erp-doctype/PurchaseReceipt/PurchaseReceiptDetail';
+import StockEntryReceipt from '../../../erp-doctype/StockEntry/Receipt/StockEntryReceipt';
 
-import { updateProject } from '../../../supabase/projects/updateProject';
+import { supabase } from '../../../../lib/supabaseClient';
+
+
+interface ProjectDetailProps {
+  projectId: number | null;
+}
+
 
 interface Project {
   id: number;
   project_name: string;
-  customer: string | null;
-  customer_name: string | null;
-  expected_start_date: string | null;
+  erp_stock_entry_receipt_id: string | null;
 }
 
-interface ProjectListProps {
-  projects: Project[];
-  loading: boolean;
-  error: string;
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-}
 
-export default function ProjectList({
-  projects,
-  loading,
-  error,
-  selectedId,
-  onSelect,
-}: ProjectListProps) {
-  const columnDefs: ColDef<Project>[] = [
-    {
-      field: 'expected_start_date',
-      headerName: '予定開始日',
-      width: 140,
-      editable: true,
-      valueFormatter: (params) => {
-        if (!params.value) return '';
+export default function ProjectDetail({
+  projectId,
+}: ProjectDetailProps) {
 
-        return new Date(params.value).toLocaleDateString('ja-JP');
-      },
-    },
-    {
-      field: 'customer',
-      headerName: '顧客コード',
-      width: 180,
-      editable: true,
-    },
-    {
-      field: 'customer_name',
-      headerName: '顧客名',
-      width: 250,
-      editable: false,
-    },
-    {
-      field: 'project_name',
-      headerName: '案件名',
-      flex: 1,
-      editable: true,
-    },
-  ];
+  const [project, setProject] =
+    useState<Project | null>(null);
 
-  async function handleCellValueChanged(
-    event: CellValueChangedEvent<Project>,
-  ) {
-    if (!event.data) return;
 
-    const field = event.colDef.field;
+  const [loading, setLoading] =
+    useState(false);
 
-    if (!field) return;
 
-    if (event.oldValue === event.newValue) {
+  useEffect(() => {
+
+    if (projectId == null) {
+      setProject(null);
       return;
     }
 
-    if (field === 'customer') {
-      try {
-        const res = await fetch(
-          `/api/erpnext/customer/${encodeURIComponent(
-            String(event.newValue),
-          )}`,
-        );
 
-        if (!res.ok) {
-          throw new Error('顧客が見つかりません');
+    async function fetchProject() {
+
+      setLoading(true);
+
+
+      try {
+
+        const {
+          data,
+          error,
+        } = await supabase
+          .from('projects')
+          .select(`
+            id,
+            project_name,
+            erp_stock_entry_receipt_id
+          `)
+          .eq(
+            'id',
+            projectId,
+          )
+          .single();
+
+
+        if (error) {
+          throw error;
         }
 
-        const customer = await res.json();
 
-        event.data.customer_name =
-          customer.customer_name;
+        setProject(data);
 
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
-      } catch (error) {
-        console.error(error);
 
-        event.node.setDataValue(
-          'customer',
-          event.oldValue,
+      } catch (e) {
+
+        console.error(
+          'Project取得失敗',
+          e,
         );
 
-        event.data.customer_name = null;
+        setProject(null);
 
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
 
-        return;
+      } finally {
+
+        setLoading(false);
+
       }
+
     }
 
-    try {
-      await updateProject(event.data);
-    } catch (error) {
-      console.error('保存失敗', error);
 
-      event.node.setDataValue(
-        field,
-        event.oldValue,
-      );
-    }
-  }
+    void fetchProject();
 
-  if (loading) {
-    return <div style={{ padding: 16 }}>案件読込中...</div>;
-  }
 
-  if (error) {
+  }, [projectId]);
+
+
+
+  if (projectId == null) {
     return (
-      <div
-        style={{
-          padding: 16,
-          color: '#c62828',
-        }}
-      >
-        {error}
+      <div style={{ padding: 16 }}>
+        プロジェクトを選択してください。
       </div>
     );
   }
 
+
+
+  if (loading) {
+    return (
+      <div style={{ padding: 16 }}>
+        読込中...
+      </div>
+    );
+  }
+
+
+
+  if (!project) {
+    return (
+      <div style={{ padding: 16 }}>
+        プロジェクトがありません。
+      </div>
+    );
+  }
+
+
+
   return (
     <div
-      className="ag-theme-quartz"
       style={{
-        height: '100%',
         width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: '#fff',
+        boxSizing: 'border-box',
       }}
     >
-      <AgGridReact<Project>
-        rowData={projects}
-        columnDefs={columnDefs}
-        enableCellTextSelection
-        enableRangeSelection
-        copyHeadersToClipboard={false}
-        defaultColDef={{
-          sortable: true,
-          filter: true,
-          resizable: true,
+
+      <div
+        style={{
+          padding: 16,
+          borderBottom:
+            '1px solid #ddd',
+          flexShrink: 0,
         }}
-        rowSelection="single"
-        getRowId={(params) =>
-          params.data.id.toString()
-        }
-        onRowClicked={(event) => {
-          if (event.data) {
-            onSelect(event.data.id);
-          }
+      >
+
+        <h2
+          style={{
+            margin: 0,
+            marginBottom: 8,
+            fontSize: 18,
+          }}
+        >
+          {project.project_name}
+        </h2>
+
+
+      </div>
+
+
+
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: 16,
+          boxSizing: 'border-box',
         }}
-        onCellValueChanged={handleCellValueChanged}
-        getRowClass={(params) =>
-          params.data?.id === selectedId
-            ? 'selected-row'
-            : ''
-        }
-      />
+      >
+
+        <div
+          style={{
+            marginBottom: 24,
+          }}
+        >
+          <PurchaseReceiptDetail
+            projectId={projectId}
+          />
+        </div>
+
+
+
+        <div
+          style={{
+            borderTop:
+              '1px solid #ddd',
+            paddingTop: 16,
+          }}
+        >
+
+          <StockEntryReceipt
+            stockEntryName={
+              project.erp_stock_entry_receipt_id
+            }
+          />
+
+        </div>
+
+
+      </div>
+
     </div>
   );
 }
