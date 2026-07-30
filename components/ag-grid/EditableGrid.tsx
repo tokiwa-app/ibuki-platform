@@ -44,6 +44,13 @@ export default function EditableGrid<T>({
     );
   }
 
+  // レコードセレクタ（チェックボックス）を先頭に自動追加するための列定義
+  const defaultColDef: ColDef<T> = {
+    sortable: true,
+    filter: true,
+    resizable: true,
+  };
+
   return (
     <div
       className="ag-theme-quartz"
@@ -58,27 +65,25 @@ export default function EditableGrid<T>({
         enableCellTextSelection
         enableRangeSelection
         copyHeadersToClipboard={false}
-        defaultColDef={{
-          sortable: true,
-          filter: true,
-          resizable: true,
+        defaultColDef={defaultColDef}
+        // レコードセレクタ（チェックボックス）の有効化
+        rowSelection={{
+          mode: 'multiRow',
+          checkboxes: true,
+          headerCheckbox: true,
+          selectTextOnFocus: false,
         }}
-        rowSelection="single"
         stopEditingWhenCellsLoseFocus={true}
-        
-        {/* ★ 編集中に上下キーが押されたとき、グリッド側のデフォルト動作（編集確定＆移動）を有効にする */}
         suppressKeyboardEvent={(params) => {
           const event = params.event;
           const key = event.key;
           const isEditing = params.editing;
 
-          // 編集中に上下キーが押された場合、グリッドにイベントを処理させるため false を返す
           if (isEditing && (key === 'ArrowUp' || key === 'ArrowDown')) {
-            return false; 
+            return false;
           }
           return false;
         }}
-
         getRowId={getRowId}
         onRowClicked={(event) => {
           if (event.data) {
