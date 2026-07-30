@@ -1,191 +1,71 @@
-'use client';
+async function handleCellValueChanged(
+  event: CellValueChangedEvent<Project>,
+) {
+  if (!event.data) return;
 
-import { AgGridReact } from 'ag-grid-react';
-import {
-  ColDef,
-  CellValueChangedEvent,
-} from 'ag-grid-community';
+  const field = event.colDef.field;
 
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-quartz.css';
+  if (!field) return;
 
-import { updateProjectField } from '../../../supabase/projects/updateProjectField';
+  if (event.oldValue === event.newValue) {
+    return;
+  }
 
-interface Project {
-  id: number;
-  project_name: string;
-  customer: string | null;
-  customer_name: string | null;
-  expected_start_date: string | null;
-}
-
-interface ProjectListProps {
-  projects: Project[];
-  loading: boolean;
-  error: string;
-  selectedId: number | null;
-  onSelect: (id: number) => void;
-}
-
-export default function ProjectList({
-  projects,
-  loading,
-  error,
-  selectedId,
-  onSelect,
-}: ProjectListProps) {
-  const columnDefs: ColDef<Project>[] = [
-    {
-      field: 'expected_start_date',
-      headerName: '予定開始日',
-      width: 140,
-      editable: true,
-      valueFormatter: (params) => {
-        if (!params.value) return '';
-
-        return new Date(params.value).toLocaleDateString('ja-JP');
-      },
-    },
-    {
-      field: 'customer',
-      headerName: '顧客コード',
-      width: 180,
-      editable: true,
-    },
-    {
-      field: 'customer_name',
-      headerName: '顧客名',
-      width: 250,
-      editable: false,
-    },
-    {
-      field: 'project_name',
-      headerName: '案件名',
-      flex: 1,
-      editable: true,
-    },
-  ];
-
-  async function handleCellValueChanged(
-    event: CellValueChangedEvent<Project>,
-  ) {
-    if (!event.data) return;
-
-    const field = event.colDef.field;
-
-    if (!field) return;
-
-    if (event.oldValue === event.newValue) {
-      return;
-    }
-
-    // 顧客コード変更時
-    if (field === 'customer') {
-      try {
-        const res = await fetch(
-          `/api/erpnext/customer/${encodeURIComponent(String(event.newValue))}`
-        );
-
-        if (!res.ok) {
-          throw new Error('顧客が見つかりません');
-        }
-
-        const customer = await res.json();
-
-        // 顧客名を画面に反映
-        event.data.customer_name = customer.customer_name;
-
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
-
-        return;
-      } catch (error) {
-        console.error(error);
-
-        // 元に戻す
-        event.node.setDataValue('customer', event.oldValue);
-        event.data.customer_name = null;
-
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
-
-        return;
-      }
-    }
-
-    // その他の項目は今まで通り保存
+  // 顧客コード変更時のみ顧客名を取得
+  if (field === 'customer') {
     try {
-      await updateProjectField(
-        event.data.id,
-        field as keyof Project,
-        event.newValue,
+      const res = await fetch(
+        `/api/erpnext/customer/${encodeURIComponent(
+          String(event.newValue),
+        )}`,
       );
-    } catch (error) {
-      console.error('保存失敗', error);
 
+      if (!res.ok) {
+        throw new Error('顧客が見つかりません');
+      }
+
+      const customer = await res.json();
+
+      // 画面へ反映
+      event.data.customer_name =
+        customer.customer_name;
+
+      event.api.refreshCells({
+        rowNodes: [event.node],
+        columns: ['customer_name'],
+      });
+    } catch (error) {
+      console.error(error);
+
+      // 元に戻す
       event.node.setDataValue(
-        field,
+        'customer',
         event.oldValue,
       );
+
+      event.data.customer_name = null;
+
+      event.api.refreshCells({
+        rowNodes: [event.node],
+        columns: ['customer_name'],
+      });
+
+      return;
     }
   }
 
-  if (loading) {
-    return <div style={{ padding: 16 }}>案件読込中...</div>;
-  }
+  try {
+    await updateProjectField(
+      event.data.id,
+      field as keyof Project,
+      event.newValue,
+    );
+  } catch (error) {
+    console.error('保存失敗', error);
 
-  if (error) {
-    return (
-      <div
-        style={{
-          padding: 16,
-          color: '#c62828',
-        }}
-      >
-        {error}
-      </div>
+    event.node.setDataValue(
+      field,
+      event.oldValue,
     );
   }
-
-  return (
-    <div
-      className="ag-theme-quartz"
-      style={{
-        height: '100%',
-        width: '100%',
-      }}
-    >
-      <AgGridReact<Project>
-        rowData={projects}
-        columnDefs={columnDefs}
-        enableCellTextSelection
-        enableRangeSelection
-        copyHeadersToClipboard={false}
-        defaultColDef={{
-          sortable: true,
-          filter: true,
-          resizable: true,
-        }}
-        rowSelection="single"
-        getRowId={(params) =>
-          params.data.id.toString()
-        }
-        onRowClicked={(event) => {
-          if (event.data) {
-            onSelect(event.data.id);
-          }
-        }}
-        onCellValueChanged={handleCellValueChanged}
-        getRowClass={(params) =>
-          params.data?.id === selectedId
-            ? 'selected-row'
-            : ''
-        }
-      />
-    </div>
-  );
 }
