@@ -65,16 +65,6 @@ export default function EditableGrid<T>({
         }}
         rowSelection="single"
         stopEditingWhenCellsLoseFocus={true}
-        suppressKeyboardEvent={(params) => {
-          const event = params.event;
-          const key = event.key;
-          const isEditing = params.editing;
-
-          if (isEditing && (key === 'ArrowUp' || key === 'ArrowDown')) {
-            return false;
-          }
-          return false;
-        }}
         getRowId={getRowId}
         onRowClicked={(event) => {
           if (event.data) {
