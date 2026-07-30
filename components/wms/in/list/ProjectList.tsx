@@ -1,8 +1,6 @@
 'use client';
 
-import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
-import { updateProject } from '../../../supabase/projects/updateProject';
 
 interface Project {
   id: number;
@@ -18,6 +16,8 @@ interface ProjectListProps {
   error: string;
   selectedId: number | null;
   onSelect: (id: number) => void;
+  // 親から更新イベントや一括変更を受け取るプロパティ（必要に応じて）
+  onProjectsChange?: (newProjects: Project[]) => void;
 }
 
 export default function ProjectList({
@@ -26,103 +26,37 @@ export default function ProjectList({
   error,
   selectedId,
   onSelect,
+  onProjectsChange,
 }: ProjectListProps) {
-  const columnDefs: ColDef<Project>[] = [
-    {
-      field: 'expected_start_date',
-      headerName: '予定開始日',
-      width: 140,
-      editable: true,
-      valueFormatter: (params) => {
-        if (!params.value) return '';
-        return new Date(params.value).toLocaleDateString('ja-JP');
-      },
-    },
-    {
-      field: 'customer',
-      headerName: '顧客コード',
-      width: 180,
-      editable: true,
-    },
-    {
-      field: 'customer_name',
-      headerName: '顧客名',
-      width: 250,
-      editable: false,
-    },
-    {
-      field: 'project_name',
-      headerName: '案件名',
-      flex: 1,
-      editable: true,
-    },
+  // 自作 EditableGrid 用の columns 定義に変換
+  const columns = [
+    { key: 'expected_start_date' as keyof Project, label: '予定開始日' },
+    { key: 'customer' as keyof Project, label: '顧客コード' },
+    { key: 'customer_name' as keyof Project, label: '顧客名' },
+    { key: 'project_name' as keyof Project, label: '案件名' },
   ];
 
-  async function handleCellValueChanged(
-    event: CellValueChangedEvent<Project>,
-  ) {
-    if (!event.data) return;
+  if (loading) {
+    return <div className="p-4">読込中...</div>;
+  }
 
-    const field = event.colDef.field;
-    if (!field) return;
-
-    if (event.oldValue === event.newValue) {
-      return;
-    }
-
-    if (field === 'customer') {
-      try {
-        const res = await fetch(
-          `/api/erpnext/customer/${encodeURIComponent(
-            String(event.newValue),
-          )}`,
-        );
-
-        if (!res.ok) {
-          throw new Error('顧客が見つかりません');
-        }
-
-        const customer = await res.json();
-        event.data.customer_name = customer.customer_name;
-
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
-      } catch (error) {
-        console.error(error);
-
-        event.node.setDataValue('customer', event.oldValue);
-        event.data.customer_name = null;
-
-        event.api.refreshCells({
-          rowNodes: [event.node],
-          columns: ['customer_name'],
-        });
-
-        return;
-      }
-    }
-
-    try {
-      await updateProject(event.data);
-    } catch (error) {
-      console.error('保存失敗', error);
-
-      event.node.setDataValue(field, event.oldValue);
-    }
+  if (error) {
+    return <div className="p-4 text-red-600">{error}</div>;
   }
 
   return (
-    <EditableGrid<Project>
-      rowData={projects}
-      columnDefs={columnDefs}
-      loading={loading}
-      error={error}
-      selectedId={selectedId}
-      onSelect={onSelect}
-      onCellValueChanged={handleCellValueChanged}
-      getRowId={(params) => params.data.id.toString()}
-    />
+    <div className="h-full w-full">
+      <EditableGrid<Project>
+        data={projects}
+        columns={columns}
+        onChange={(updatedData) => {
+          if (onProjectsChange) {
+            onProjectsChange(updatedData);
+          }
+        }}
+        selectedId={selectedId}
+        onSelect={onSelect}
+      />
+    </div>
   );
 }
