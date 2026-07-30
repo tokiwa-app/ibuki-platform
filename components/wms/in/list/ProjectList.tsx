@@ -9,7 +9,7 @@ import {
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-import { updateProjectField } from '../../../supabase/projects/updateProjectField';
+import { updateProject } from '../../../supabase/projects/updateProject';
 
 interface Project {
   id: number;
@@ -79,7 +79,6 @@ export default function ProjectList({
       return;
     }
 
-    // 顧客コード変更時はERPNextから顧客名取得
     if (field === 'customer') {
       try {
         const res = await fetch(
@@ -94,8 +93,8 @@ export default function ProjectList({
 
         const customer = await res.json();
 
-        // 顧客名を画面へ反映
-        event.data.customer_name = customer.customer_name;
+        event.data.customer_name =
+          customer.customer_name;
 
         event.api.refreshCells({
           rowNodes: [event.node],
@@ -104,7 +103,6 @@ export default function ProjectList({
       } catch (error) {
         console.error(error);
 
-        // 顧客コードを元に戻す
         event.node.setDataValue(
           'customer',
           event.oldValue,
@@ -122,11 +120,7 @@ export default function ProjectList({
     }
 
     try {
-      await updateProjectField(
-        event.data.id,
-        field as keyof Project,
-        event.newValue,
-      );
+      await updateProject(event.data);
     } catch (error) {
       console.error('保存失敗', error);
 
