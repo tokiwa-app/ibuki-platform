@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from "react";
 
-// TSVを2次元配列にパース
 export function parseTsvToMatrix(tsv: string): string[][] {
   if (!tsv) return [];
   return tsv
@@ -11,36 +10,41 @@ export function parseTsvToMatrix(tsv: string): string[][] {
     .filter((row) => row.some((cell) => cell.trim() !== ""));
 }
 
+interface ColumnDef<T> {
+  key: keyof T;
+  label: string;
+}
+
 interface EditableGridProps<T extends Record<string, any>> {
-  data: T[];
-  columns: { key: keyof T; label: string }[];
-  onChange: (newData: T[]) => void;
+  data?: T[] | null;
+  columns?: ColumnDef<T>[] | null;
+  onChange?: (newData: T[]) => void;
   selectedId?: number | null;
   onSelect?: (id: number) => void;
 }
 
 export default function EditableGrid<T extends Record<string, any>>({
   data = [],
-  columns,
-  onChange,
-  selectedId,
-  onSelect,
+  columns = [],
+  onChange = () => {},
+  selectedId = null,
+  onSelect = () => {},
 }: EditableGridProps<T>) {
-  // 安全保障：dataが万が一undefinedやnullでもビルドエラーや実行時エラーにならないようにする
+  // データの安全な配列化
   const safeData = Array.isArray(data) ? data : [];
+  const safeColumns = Array.isArray(columns) ? columns : [];
 
-  // 1. オブジェクトの配列を、自作テーブル用の2次元配列（マトリックス）に変換
+  // マトリックス変換
   const matrix = safeData.map((row) =>
-    columns.map((col) => String(row[col.key] ?? ""))
+    safeColumns.map((col) => String(row?.[col.key] ?? ""))
   );
 
-  // 2次元配列の変更を、元のオブジェクト配列に戻して親に通知するヘルパー
   const updateMatrixToObjects = (newMatrix: string[][]) => {
     const updatedData = newMatrix.map((rowValues, rIdx) => {
       const existing = safeData[rIdx] || { id: null };
       const newObj: any = { ...existing };
 
-      columns.forEach((col, cIdx) => {
+      safeColumns.forEach((col, cIdx) => {
         newObj[col.key] = rowValues[cIdx] ?? "";
       });
 
@@ -48,18 +52,18 @@ export default function EditableGrid<T extends Record<string, any>>({
     });
 
     const filtered = updatedData.filter((row) =>
-      columns.some((col) => String(row[col.key] ?? "").trim() !== "")
+      safeColumns.some((col) => String(row?.[col.key] ?? "").trim() !== "")
     );
 
     onChange(filtered);
   };
 
   const totalRows = matrix.length;
-  const totalCols = columns.length;
-  const viewRows = totalRows + 1; // 常に一番下に空行を表示
+  const totalCols = safeColumns.length;
+  const viewRows = totalRows + 1;
 
   const createEmptyRow = (cols: number) => Array.from({ length: cols }, () => "");
-  const getRow = (r: number) => (r < totalRows ? matrix[r] : createEmptyRow(totalCols));
+  const getRow = (r: number) => (r < totalRows && matrix[r] ? matrix[r] : createEmptyRow(totalCols));
 
   const normalize = (r1: number, c1: number, r2: number, c2: number) => ({
     r1: Math.max(0, Math.min(r1, r2)),
@@ -75,8 +79,6 @@ export default function EditableGrid<T extends Record<string, any>>({
   const dragRef = useRef(false);
   const anchorRef = useRef<{ r: number; c: number } | null>(null);
   const dragRowRef = useRef<number | null>(null);
-  const dragColRef = useRef<number | null>(null);
-
   const [dragRowFrom, setDragRowFrom] = useState<number | null>(null);
   const [dragRowTo, setDragRowTo] = useState<number | null>(null);
 
@@ -90,8 +92,10 @@ export default function EditableGrid<T extends Record<string, any>>({
         next.push(createEmptyRow(totalCols));
       }
     }
-    next[r][c] = value;
-    updateMatrixToObjects(next);
+    if (next[r]) {
+      next[r][c] = value;
+      updateMatrixToObjects(next);
+    }
   };
 
   const deleteRow = (rowIndex: number) => {
@@ -115,7 +119,6 @@ export default function EditableGrid<T extends Record<string, any>>({
     const r = r1;
     const c = c1;
 
-    // コピー (Ctrl + C)
     if ((e.key === "c" || e.key === "C") && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       const rows: string[] = [];
@@ -129,7 +132,6 @@ export default function EditableGrid<T extends Record<string, any>>({
 
     if (editMode) return;
 
-    // 文字入力開始
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       setEditValue(e.key);
@@ -137,7 +139,6 @@ export default function EditableGrid<T extends Record<string, any>>({
       return;
     }
 
-    // 矢印キー・Tab・Enter移動
     if (!e.shiftKey) {
       if (e.key === "ArrowRight" || e.key === "Tab") {
         setSelection(normalize(r, c + 1, r, c + 1));
@@ -154,7 +155,6 @@ export default function EditableGrid<T extends Record<string, any>>({
     }
   };
 
-  // 貼り付け (Ctrl + V)
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     if (!selection) return;
     const text = e.clipboardData?.getData("text");
@@ -166,7 +166,7 @@ export default function EditableGrid<T extends Record<string, any>>({
 
     const { r1, c1 } = selection;
     const blockRows = block.length;
-    const blockCols = block[0].length;
+    const blockCols = block[0]?.length || 0;
 
     const oldRows = matrix.length;
     const oldCols = totalCols;
@@ -179,8 +179,8 @@ export default function EditableGrid<T extends Record<string, any>>({
 
     for (let br = 0; br < blockRows; br++) {
       for (let bc = 0; bc < blockCols; bc++) {
-        if (c1 + bc < totalCols) {
-          next[r1 + br][c1 + bc] = block[br][bc] ?? "";
+        if (c1 + bc < totalCols && next[r1 + br]) {
+          next[r1 + br][c1 + bc] = block[br]?.[bc] ?? "";
         }
       }
     }
@@ -198,10 +198,13 @@ export default function EditableGrid<T extends Record<string, any>>({
   const resetDrags = () => {
     dragRef.current = false;
     dragRowRef.current = null;
-    dragColRef.current = null;
     setDragRowFrom(null);
     setDragRowTo(null);
   };
+
+  if (safeColumns.length === 0) {
+    return <div className="p-4 text-gray-500">列定義がありません</div>;
+  }
 
   return (
     <div
@@ -216,12 +219,12 @@ export default function EditableGrid<T extends Record<string, any>>({
         <thead>
           <tr>
             <th className="border border-gray-300 bg-gray-100 w-10 p-0" />
-            {columns.map((col) => (
+            {safeColumns.map((col, idx) => (
               <th
-                key={String(col.key)}
+                key={String(col?.key || idx)}
                 className="border border-gray-300 bg-gray-100 px-2 py-1 select-none text-left font-semibold text-gray-700"
               >
-                {col.label}
+                {col?.label ?? String(col?.key ?? '')}
               </th>
             ))}
           </tr>
@@ -245,7 +248,6 @@ export default function EditableGrid<T extends Record<string, any>>({
                   if (rowId && onSelect) onSelect(rowId);
                 }}
               >
-                {/* 行ヘッダー（行番号 ＆ 削除ボタン） */}
                 <th
                   className="border border-gray-300 bg-gray-100 text-right pr-2 w-12 select-none cursor-pointer"
                   onMouseDown={() => {
@@ -268,6 +270,7 @@ export default function EditableGrid<T extends Record<string, any>>({
                     <span>{r + 1}</span>
                     {!isBlankRow && (
                       <button
+                        type="button"
                         className="text-red-500 text-xs hover:text-red-700 font-bold"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -307,10 +310,10 @@ export default function EditableGrid<T extends Record<string, any>>({
                             setEditMode(false);
                           }}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              commit(active!.r, active!.c, editValue);
+                            if (e.key === "Enter" && active) {
+                              commit(active.r, active.c, editValue);
                               setEditMode(false);
-                              setSelection(normalize(active!.r + 1, active!.c, active!.r + 1, active!.c));
+                              setSelection(normalize(active.r + 1, active.c, active.r + 1, active.c));
                             }
                           }}
                         />
