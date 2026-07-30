@@ -1,303 +1,287 @@
 'use client';
 
-import React, { useRef, useState } from "react";
+import React, { useState, useRef, useCallback, KeyboardEvent, ChangeEvent } from 'react';
 
-// TSVを2次元配列にパース（Excel等からの貼り付け用）
-export function parseTsvToMatrix(tsv: string): string[][] {
-  if (!tsv) return [];
-  return tsv
-    .split(/\r?\n/)
-    .map((line) => line.split("\t"))
-    .filter((row) => row.some((cell) => cell.trim() !== ""));
+// カラム定義の型
+export interface ColumnDef<T> {
+  field: keyof T | string;
+  headerName: string;
+  width?: string;
 }
 
-interface ColumnDef<T> {
-  key: keyof T;
-  label: string;
+interface EditableTableProps<T> {
+  rowData: T[];
+  columnDefs: ColumnDef<T>[];
+  loading: boolean;
+  error: string;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
+  // セル単体の変更（簡易的に用意）
+  onCellValueChanged?: (updatedRow: T, field: string, value: any) => void;
+  getRowId: (item: T) => number | string;
+  onBatchDataChanged?: (updatedData: T[]) => void;
 }
 
-interface EditableGridProps<T extends Record<string, any>> {
-  data?: T[] | null;
-  columns?: ColumnDef<T>[] | null;
-  onChange?: (newData: T[]) => void;
-  selectedId?: number | null;
-  onSelect?: (id: number) => void;
-}
+export default function EditableTable<T extends Record<string, any>>({
+  rowData,
+  columnDefs,
+  loading,
+  error,
+  selectedId,
+  onSelect,
+  onCellValueChanged,
+  getRowId,
+  onBatchDataChanged,
+}: EditableTableProps<T>) {
+  // 現在フォーカス（選択）されているセル座標 { rowIndex, colIndex }
+  const [focusedCell, setFocusedCell] = useState<{ rowIndex: number; colIndex: number } | null>(null);
+  
+  // 現在インライン編集中のセル座標
+  const [editingCell, setEditingCell] = useState<{ rowIndex: number; colIndex: number } | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
 
-export default function EditableGrid<T extends Record<string, any>>({
-  data = [],
-  columns = [],
-  onChange = () => {},
-  selectedId = null,
-  onSelect = () => {},
-}: EditableGridProps<T>) {
-  const safeData = Array.isArray(data) ? data : [];
-  const safeColumns = Array.isArray(columns) ? columns : [];
+  const tableRef = useRef<HTMLDivElement>(null);
 
-  // オブジェクトの配列を2次元配列（マトリックス）に変換
-  const matrix = safeData.map((row) =>
-    safeColumns.map((col) => String(row?.[col.key] ?? ""))
-  );
+  if (loading) {
+    return <div style={{ padding: 16 }}>読込中...</div>;
+  }
 
-  const totalRows = matrix.length;
-  const totalCols = safeColumns.length;
-  const viewRows = totalRows + 1; // 常に末尾に入力用の空行を確保
+  if (error) {
+    return <div style={{ padding: 16, color: '#c62828' }}>{error}</div>;
+  }
 
-  const createEmptyRow = (cols: number) => Array.from({ length: cols }, () => "");
-  const getRow = (r: number) => (r < totalRows && matrix[r] ? matrix[r] : createEmptyRow(totalCols));
-
-  const normalize = (r1: number, c1: number, r2: number, c2: number) => ({
-    r1: Math.max(0, Math.min(r1, r2)),
-    c1: Math.max(0, Math.min(c1, c2)),
-    r2: Math.min(viewRows - 1, Math.max(r1, r2)),
-    c2: Math.min(totalCols - 1, Math.max(c1, c2)),
-  });
-
-  const [selection, setSelection] = useState<{ r1: number; c1: number; r2: number; c2: number } | null>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [editValue, setEditValue] = useState("");
-
-  const dragRef = useRef(false);
-  const anchorRef = useRef<{ r: number; c: number } | null>(null);
-
-  const isSingle = selection && selection.r1 === selection.r2 && selection.c1 === selection.c2;
-  const active = isSingle ? { r: selection.r1, c: selection.c1 } : null;
-
-  // 2次元配列の変更を元のオブジェクト配列に戻して親に通知
-  const updateMatrixToObjects = (newMatrix: string[][]) => {
-    const updatedData = newMatrix.map((rowValues, rIdx) => {
-      const existing = safeData[rIdx] || { id: Date.now() + rIdx };
-      const newObj: any = { ...existing };
-
-      safeColumns.forEach((col, cIdx) => {
-        newObj[col.key] = rowValues[cIdx] ?? "";
-      });
-
-      return newObj as T;
-    });
-
-    const filtered = updatedData.filter((row) =>
-      safeColumns.some((col) => String(row?.[col.key] ?? "").trim() !== "")
-    );
-
-    onChange(filtered);
-  };
-
-  const commit = (r: number, c: number, value: string) => {
-    const next = matrix.map((row) => [...row]);
-    if (r >= next.length) {
-      for (let i = next.length; i <= r; i++) {
-        next.push(createEmptyRow(totalCols));
-      }
-    }
-    if (next[r]) {
-      next[r][c] = value;
-      updateMatrixToObjects(next);
-    }
-  };
-
-  const deleteRow = (rowIndex: number) => {
-    if (rowIndex >= totalRows) return;
-    const next = matrix.filter((_, i) => i !== rowIndex);
-    updateMatrixToObjects(next);
-    setSelection(null);
-  };
-
-  // キーボード操作（矢印移動、Tab、Enter、Ctrl+Cなど）
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!selection) return;
-    const { r1, c1, r2, c2 } = selection;
-    const r = r1;
-    const c = c1;
-
-    // コピー (Ctrl + C)
-    if ((e.key === "c" || e.key === "C") && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      const rows: string[] = [];
-      for (let rr = r1; rr <= r2; rr++) {
-        const row = getRow(rr);
-        rows.push(row.slice(c1, c2 + 1).join("\t"));
-      }
-      navigator.clipboard.writeText(rows.join("\n")).catch(() => {});
-      return;
-    }
-
-    if (editMode) return;
-
-    // 文字キー入力で即座に編集モードへ
-    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault();
-      setEditValue(e.key);
-      setEditMode(true);
-      return;
-    }
-
-    if (!e.shiftKey) {
-      if (e.key === "ArrowRight" || e.key === "Tab") {
-        setSelection(normalize(r, c + 1, r, c + 1));
-      } else if (e.key === "ArrowLeft") {
-        setSelection(normalize(r, c - 1, r, c - 1));
-      } else if (e.key === "ArrowDown" || e.key === "Enter") {
-        setSelection(normalize(r + 1, c, r + 1, c));
-      } else if (e.key === "ArrowUp") {
-        setSelection(normalize(r - 1, c, r - 1, c));
-      } else {
+  // -----------------------------------------------------------------
+  // キーボードイベント処理（矢印キー移動、Enterで編集、Ctrl+Vペースト）
+  // -----------------------------------------------------------------
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      // 編集中のインプット要素にフォーカスがある場合は、通常の挙動を優先
+      if (editingCell) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commitEdit();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          setEditingCell(null);
+        }
         return;
       }
-      e.preventDefault();
-    }
-  };
 
-  // 貼り付け (Ctrl + V)
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    if (!selection) return;
-    const text = e.clipboardData?.getData("text");
-    if (!text) return;
-    e.preventDefault();
+      // --- Ctrl + V（一括ペースト） ---
+      if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
+        event.preventDefault();
 
-    const block = parseTsvToMatrix(text);
-    if (!block.length) return;
+        if (!focusedCell || !onBatchDataChanged) return;
 
-    const { r1, c1 } = selection;
-    const blockRows = block.length;
-    const blockCols = block[0]?.length || 0;
+        navigator.clipboard
+          .readText()
+          .then((clipboardText) => {
+            if (!clipboardText) return;
 
-    const oldRows = matrix.length;
-    const oldCols = totalCols;
-    const newRows = Math.max(oldRows, r1 + blockRows);
-    const newCols = Math.max(oldCols, c1 + blockCols);
+            const rows = clipboardText.split(/\r\n|\n|\r/).filter((r) => r !== '');
+            const matrix = rows.map((r) => r.split('\t'));
 
-    const next = Array.from({ length: newRows }, (_, r) =>
-      Array.from({ length: newCols }, (_, c) => matrix[r]?.[c] ?? "")
-    );
+            if (matrix.length === 0) return;
 
-    for (let br = 0; br < blockRows; br++) {
-      for (let bc = 0; bc < blockCols; bc++) {
-        if (c1 + bc < totalCols && next[r1 + br]) {
-          next[r1 + br][c1 + bc] = block[br]?.[bc] ?? "";
-        }
+            const newData = [...rowData];
+            const startRowIndex = focusedCell.rowIndex;
+            const startColIndex = focusedCell.colIndex;
+
+            matrix.forEach((rowValues, rIdx) => {
+              const targetRowIdx = startRowIndex + rIdx;
+              if (targetRowIdx >= newData.length) return;
+
+              const targetRow = { ...newData[targetRowIdx] };
+
+              rowValues.forEach((val, cIdx) => {
+                const targetColIdx = startColIndex + cIdx;
+                const targetCol = columnDefs[targetColIdx];
+                if (!targetCol) return;
+
+                const field = String(targetCol.field);
+                if (field && field !== 'id') {
+                  targetRow[field] = val;
+                }
+              });
+
+              newData[targetRowIdx] = targetRow;
+            });
+
+            onBatchDataChanged(newData);
+          })
+          .catch((err) => {
+            console.error('クリップボードの読み取りに失敗しました:', err);
+          });
+        return;
       }
+
+      // --- セル選択中のキーボード移動・操作 ---
+      if (!focusedCell) {
+        if (rowData.length > 0 && columnDefs.length > 0) {
+          setFocusedCell({ rowIndex: 0, colIndex: 0 });
+        }
+        return;
+      }
+
+      const { rowIndex, colIndex } = focusedCell;
+
+      switch (event.key) {
+        case 'ArrowUp':
+          event.preventDefault();
+          if (rowIndex > 0) setFocusedCell({ rowIndex: rowIndex - 1, colIndex });
+          break;
+        case 'ArrowDown':
+          event.preventDefault();
+          if (rowIndex < rowData.length - 1) setFocusedCell({ rowIndex: rowIndex + 1, colIndex });
+          break;
+        case 'ArrowLeft':
+          event.preventDefault();
+          if (colIndex > 0) setFocusedCell({ rowIndex, colIndex: colIndex - 1 });
+          break;
+        case 'ArrowRight':
+          event.preventDefault();
+          if (colIndex < columnDefs.length - 1) setFocusedCell({ rowIndex, colIndex: colIndex + 1 });
+          break;
+        case 'Enter':
+          event.preventDefault();
+          // Enterで編集モードへ移行
+          startEditing(rowIndex, colIndex);
+          break;
+        default:
+          // 通常の文字入力が始まったらそのまま編集モードにする場合などの処理（簡易的に省略）
+          break;
+      }
+    },
+    [focusedCell, editingCell, rowData, columnDefs, onBatchDataChanged]
+  );
+
+  // 編集開始
+  const startEditing = (rowIndex: number, colIndex: number) => {
+    const col = columnDefs[colIndex];
+    if (String(col.field) === 'id') return; // ID列は編集不可
+
+    const row = rowData[rowIndex];
+    setEditingCell({ rowIndex, colIndex });
+    setEditValue(row[col.field] ?? '');
+  }
+
+  // 編集確定
+  const commitEdit = () => {
+    if (!editingCell) return;
+    const { rowIndex, colIndex } = editingCell;
+    const col = columnDefs[colIndex];
+    const field = String(col.field);
+    const row = rowData[rowIndex];
+
+    if (onCellValueChanged) {
+      onCellValueChanged(row, field, editValue);
     }
 
-    updateMatrixToObjects(next);
-
-    setSelection({
-      r1,
-      c1,
-      r2: r1 + blockRows - 1,
-      c2: Math.min(c1 + blockCols - 1, totalCols - 1),
-    });
+    setEditingCell(null);
+    // 編集完了後に下へフォーカスを移動する挙動（EnterNavigatesVertically相当）
+    if (rowIndex < rowData.length - 1) {
+      setFocusedCell({ rowIndex: rowIndex + 1, colIndex });
+    }
   };
 
-  const resetDrag = () => {
-    dragRef.current = false;
+  // セルクリック時の処理
+  const handleCellClick = (rowIndex: number, colIndex: number, item: T) => {
+    setFocusedCell({ rowIndex, colIndex });
+    onSelect(getRowId(item) as number);
   };
 
-  if (safeColumns.length === 0) {
-    return <div className="p-4 text-gray-500">列定義がありません</div>;
-  }
+  // セルダブルクリックで編集開始（シングルクリック編集にしたい場合は変更可）
+  const handleCellDoubleClick = (rowIndex: number, colIndex: number) => {
+    startEditing(rowIndex, colIndex);
+  };
 
   return (
     <div
+      ref={tableRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      onMouseUp={resetDrag}
-      onMouseLeave={resetDrag}
-      className="overflow-auto border rounded bg-white p-2 focus:outline-none h-full w-full"
+      style={{
+        outline: 'none',
+        height: '100%',
+        width: '100%',
+        overflow: 'auto',
+        border: '1px solid #e0e0e0',
+        fontFamily: 'sans-serif',
+        fontSize: '14px',
+      }}
     >
-      <table className="border border-gray-400 border-collapse text-sm bg-white leading-none w-full">
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
         <thead>
-          <tr>
-            <th className="border border-gray-300 bg-gray-100 w-12 p-1 text-center text-xs text-gray-500">#</th>
-            {safeColumns.map((col, idx) => (
+          <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
+            {columnDefs.map((col, idx) => (
               <th
-                key={String(col?.key || idx)}
-                className="border border-gray-300 bg-gray-100 px-2 py-1.5 select-none text-left font-semibold text-gray-700"
+                key={String(col.field) || idx}
+                style={{
+                  padding: '8px 12px',
+                  textAlign: 'left',
+                  width: col.width || 'auto',
+                  borderRight: '1px solid #e0e0e0',
+                  userSelect: 'none',
+                }}
               >
-                {col?.label ?? String(col?.key ?? '')}
+                {col.headerName}
               </th>
             ))}
           </tr>
         </thead>
-
         <tbody>
-          {Array.from({ length: viewRows }, (_, r) => {
-            const row = getRow(r);
-            const isBlankRow = r >= totalRows;
-            const rowId = safeData[r]?.id;
+          {rowData.map((row, rIdx) => {
+            const rowId = getRowId(row);
+            const isSelectedRow = rowId === selectedId;
 
             return (
               <tr
-                key={r}
-                className={rowId && rowId === selectedId ? "bg-blue-50" : ""}
-                onClick={() => {
-                  if (rowId && onSelect) onSelect(rowId);
+                key={rowId}
+                style={{
+                  backgroundColor: isSelectedRow ? '#e3f2fd' : '#fff',
+                  borderBottom: '1px solid #e0e0e0',
                 }}
               >
-                {/* 行番号 */}
-                <th className="border border-gray-300 bg-gray-100 text-center text-xs text-gray-500 w-12 select-none">
-                  {r + 1}
-                </th>
-
-                {row.map((cell, c) => {
-                  const selected =
-                    selection &&
-                    r >= selection.r1 &&
-                    r <= selection.r2 &&
-                    c >= selection.c1 &&
-                    c <= selection.c2;
-
-                  const isActive = active && active.r === r && active.c === c;
+                {columnDefs.map((col, cIdx) => {
+                  const field = String(col.field);
+                  const isFocused =
+                    focusedCell?.rowIndex === rIdx && focusedCell?.colIndex === cIdx;
+                  const isEditing =
+                    editingCell?.rowIndex === rIdx && editingCell?.colIndex === cIdx;
 
                   return (
-                    <td key={c} className="border border-gray-300 p-0 h-8">
-                      {isActive && editMode ? (
+                    <td
+                      key={field || cIdx}
+                      onClick={() => handleCellClick(rIdx, cIdx, row)}
+                      onDoubleClick={() => handleCellDoubleClick(rIdx, cIdx)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRight: '1px solid #eee',
+                        outline: isFocused ? '2px solid #1976d2' : 'none',
+                        outlineOffset: '-2px',
+                        cursor: 'cell',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {isEditing ? (
                         <input
                           autoFocus
-                          className="w-full h-full px-2 outline outline-2 outline-blue-500 bg-white"
+                          type="text"
                           value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={() => {
-                            if (active) {
-                              commit(active.r, active.c, editValue);
-                            }
-                            setEditMode(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && active) {
-                              commit(active.r, active.c, editValue);
-                              setEditMode(false);
-                              setSelection(normalize(active.r + 1, active.c, active.r + 1, active.c));
-                            }
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setEditValue(e.target.value)}
+                          onBlur={commitEdit}
+                          style={{
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            padding: '2px 4px',
+                            border: '1px solid #1976d2',
+                            outline: 'none',
                           }}
                         />
                       ) : (
-                        <div
-                          className={
-                            "px-2 py-1 h-full flex items-center select-none cursor-cell " +
-                            (selected ? "bg-blue-100 " : "") +
-                            (isActive ? "outline outline-2 outline-blue-500 bg-white z-10 relative " : "")
-                          }
-                          onMouseDown={() => {
-                            dragRef.current = true;
-                            anchorRef.current = { r, c };
-                            setSelection({ r1: r, c1: c, r2: r, c2: c });
-                          }}
-                          onMouseEnter={() => {
-                            if (dragRef.current && anchorRef.current) {
-                              setSelection(
-                                normalize(anchorRef.current.r, anchorRef.current.c, r, c)
-                              );
-                            }
-                          }}
-                          onDoubleClick={() => {
-                            setEditValue(cell ?? "");
-                            setEditMode(true);
-                          }}
-                        >
-                          {cell || <span className="text-gray-300 select-none"></span>}
-                        </div>
+                        row[field]
                       )}
                     </td>
                   );
