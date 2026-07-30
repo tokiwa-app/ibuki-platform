@@ -15,6 +15,7 @@ interface Project {
   id: number;
   project_name: string;
   customer: string | null;
+  customer_name: string | null;
   expected_start_date: string | null;
 }
 
@@ -42,15 +43,20 @@ export default function ProjectList({
       valueFormatter: (params) => {
         if (!params.value) return '';
 
-        return new Date(params.value)
-          .toLocaleDateString('ja-JP');
+        return new Date(params.value).toLocaleDateString('ja-JP');
       },
     },
     {
       field: 'customer',
-      headerName: '顧客',
+      headerName: '顧客コード',
       width: 180,
       editable: true,
+    },
+    {
+      field: 'customer_name',
+      headerName: '顧客名',
+      width: 250,
+      editable: false,
     },
     {
       field: 'project_name',
@@ -82,7 +88,6 @@ export default function ProjectList({
     } catch (error) {
       console.error('保存失敗', error);
 
-      // 保存失敗なら元の値へ戻す
       event.node.setDataValue(
         field,
         event.oldValue,
@@ -135,9 +140,7 @@ export default function ProjectList({
             onSelect(event.data.id);
           }
         }}
-        onCellValueChanged={
-          handleCellValueChanged
-        }
+        onCellValueChanged={handleCellValueChanged}
         getRowClass={(params) =>
           params.data?.id === selectedId
             ? 'selected-row'
