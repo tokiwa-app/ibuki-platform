@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
 import { updateProject } from '../../../supabase/projects/updateProject';
@@ -10,26 +11,43 @@ interface Project {
   customer: string | null;
   customer_name: string | null;
   expected_start_date: string | null;
+  project_type?: string | null;
 }
 
 interface ProjectListProps {
-  projects: Project[];
+  initialProjects: Project[];
   loading: boolean;
   error: string;
   selectedId: number | null;
   onSelect: (id: number) => void;
-  // 親側で projects の状態を更新するためのコールバック
-  onProjectsChange?: (newProjects: Project[]) => void;
 }
 
 export default function ProjectList({
-  projects,
-  loading,
-  error,
+  initialProjects,
+  loading: initialLoading,
+  error: initialError,
   selectedId,
   onSelect,
-  onProjectsChange,
 }: ProjectListProps) {
+  // 1. すべての Hooks はコンポーネントのトップレベルで確実に同じ順序で呼び出す
+  const [projects, setProjects] = useState<Project[]>(initialProjects);
+  const [loading, setLoading] = useState<boolean>(initialLoading);
+  const [error, setError] = useState<string>(initialError);
+
+  // props の変更をステートに同期
+  useEffect(() => {
+    setProjects(initialProjects);
+  }, [initialProjects]);
+
+  useEffect(() => {
+    setLoading(initialLoading);
+  }, [initialLoading]);
+
+  useEffect(() => {
+    setError(initialError);
+  }, [initialError]);
+
+  // カラム定義
   const columnDefs: ColDef<Project>[] = [
     {
       field: 'expected_start_date',
@@ -61,82 +79,85 @@ export default function ProjectList({
     },
   ];
 
-  async function handleCellValueChanged(
-    event: CellValueChangedEvent<Project>,
-  ) {
-    if (!event.data) return;
+  // セル値変更時のハンドラー
+  const handleCellValueChanged = useCallback(
+    async (event: CellValueChangedEvent<Project>) => {
+      if (!event.data) return;
 
-    const field = event.colDef.field;
-    if (!field) return;
+      const field = event.colDef.field;
+      if (!field) return;
 
-    if (event.oldValue === event.newValue) {
-      return;
-    }
-
-    // projects 配列のコピーを作成してイミュータブルに更新準備
-    const updatedProjects = [...projects];
-    const targetIndex = updatedProjects.findIndex((p) => p.id === event.data!.id);
-    if (targetIndex === -1) return;
-
-    const updatedRow = { ...updatedProjects[targetIndex] };
-    updatedRow[field as keyof Project] = event.newValue;
-
-    // 顧客コード変更時の追加フェッチ処理
-    if (field === 'customer') {
-      try {
-        const res = await fetch(
-          `/api/erpnext/customer/${encodeURIComponent(
-            String(event.newValue),
-          )}`,
-        );
-
-        if (!res.ok) {
-          throw new Error('顧客が見つかりません');
-        }
-
-        const customer = await res.json();
-        updatedRow.customer_name = customer.customer_name;
-      } catch (error) {
-        console.error(error);
-        // エラー時は変更を元に戻す
-        updatedRow.customer = event.oldValue;
-        updatedRow.customer_name = null;
-        
-        updatedProjects[targetIndex] = updatedRow;
-        if (onProjectsChange) {
-          onProjectsChange(updatedProjects);
-        }
+      if (event.oldValue === event.newValue) {
         return;
       }
-    }
 
-    try {
-      await updateProject(updatedRow);
-      updatedProjects[targetIndex] = updatedRow;
-      if (onProjectsChange) {
-        onProjectsChange(updatedProjects);
+      const updatedProjects = [...projects];
+      const targetIndex = updatedProjects.findIndex((p) => p.id === event.data!.id);
+      if (targetIndex === -1) return;
+
+      const updatedRow = { ...updatedProjects[targetIndex] };
+      updatedRow[field as keyof Project] = event.newValue;
+
+      // 顧客コード変更時の追加フェッチ
+      if (field === 'customer') {
+        try {
+          const res = await fetch(
+            `/api/erpnext/customer/${encodeURIComponent(
+              String(event.newValue),
+            )}`,
+          );
+
+          if (!res.ok) {
+            throw new Error('顧客が見つかりません');
+          }
+
+          const customer = await res.json();
+          updatedRow.customer_name = customer.customer_name;
+        } catch (err) {
+          console.error(err);
+          updatedRow.customer = event.oldValue;
+          updatedRow.customer_name = null;
+          updatedProjects[targetIndex] = updatedRow;
+          setProjects(updatedProjects);
+          return;
+        }
       }
-    } catch (error) {
-      console.error('保存失敗', error);
-      // 失敗時は変更を元に戻す
-      updatedRow[field as keyof Project] = event.oldValue;
-      updatedProjects[targetIndex] = updatedRow;
-      if (onProjectsChange) {
-        onProjectsChange(updatedProjects);
+
+      try {
+        await updateProject(updatedRow);
+        updatedProjects[targetIndex] = updatedRow;
+        setProjects(updatedProjects);
+      } catch (err) {
+        console.error('保存失敗', err);
+        updatedRow[field as keyof Project] = event.oldValue;
+        updatedProjects[targetIndex] = updatedRow;
+        setProjects(updatedProjects);
       }
-    }
+    },
+    [projects]
+  );
+
+  // ❌ 早期リターン（if文での条件分岐）は「すべての Hooks の宣言が終わった後」に記述する
+  if (loading) {
+    return <div className="p-4 text-gray-500">読み込み中...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">エラー: {error}</div>;
   }
 
   return (
-    <EditableGrid<Project>
-      rowData={projects}
-      columnDefs={columnDefs}
-      loading={loading}
-      error={error}
-      selectedId={selectedId}
-      onSelect={onSelect}
-      onCellValueChanged={handleCellValueChanged}
-      getRowId={(params) => params.data.id.toString()}
-    />
+    <div className="w-full h-full">
+      <EditableGrid<Project>
+        rowData={projects}
+        columnDefs={columnDefs}
+        loading={loading}
+        error={error}
+        selectedId={selectedId}
+        onSelect={onSelect}
+        onCellValueChanged={handleCellValueChanged}
+        getRowId={(params) => params.data.id.toString()}
+      />
+    </div>
   );
 }
