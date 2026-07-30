@@ -15,6 +15,7 @@ interface EditableGridProps<T> {
   onSelect: (id: number) => void;
   onCellValueChanged: (event: CellValueChangedEvent<T>) => void;
   getRowId: (params: { data: T }) => string;
+  onGridReady?: (params: any) => void; // ★ 追加：API受渡し用
 }
 
 export default function EditableGrid<T>({
@@ -26,6 +27,7 @@ export default function EditableGrid<T>({
   onSelect,
   onCellValueChanged,
   getRowId,
+  onGridReady, // ★ 追加
 }: EditableGridProps<T>) {
   if (loading) {
     return <div style={{ padding: 16 }}>読込中...</div>;
@@ -44,7 +46,6 @@ export default function EditableGrid<T>({
     );
   }
 
-  // レコードセレクタ（チェックボックス）を先頭に自動追加するための列定義
   const defaultColDef: ColDef<T> = {
     sortable: true,
     filter: true,
@@ -66,7 +67,6 @@ export default function EditableGrid<T>({
         enableRangeSelection
         copyHeadersToClipboard={false}
         defaultColDef={defaultColDef}
-        // レコードセレクタ（チェックボックス）の有効化
         rowSelection={{
           mode: 'multiRow',
           checkboxes: true,
@@ -85,6 +85,7 @@ export default function EditableGrid<T>({
           return false;
         }}
         getRowId={getRowId}
+        onGridReady={onGridReady} // ★ 追加：AgGridReactにバインド
         onRowClicked={(event) => {
           if (event.data) {
             // @ts-ignore
