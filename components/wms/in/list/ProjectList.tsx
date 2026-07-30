@@ -79,6 +79,45 @@ export default function ProjectList({
       return;
     }
 
+    // 顧客コード変更時
+    if (field === 'customer') {
+      try {
+        const res = await fetch(
+          `/api/erpnext/customer/${encodeURIComponent(String(event.newValue))}`
+        );
+
+        if (!res.ok) {
+          throw new Error('顧客が見つかりません');
+        }
+
+        const customer = await res.json();
+
+        // 顧客名を画面に反映
+        event.data.customer_name = customer.customer_name;
+
+        event.api.refreshCells({
+          rowNodes: [event.node],
+          columns: ['customer_name'],
+        });
+
+        return;
+      } catch (error) {
+        console.error(error);
+
+        // 元に戻す
+        event.node.setDataValue('customer', event.oldValue);
+        event.data.customer_name = null;
+
+        event.api.refreshCells({
+          rowNodes: [event.node],
+          columns: ['customer_name'],
+        });
+
+        return;
+      }
+    }
+
+    // その他の項目は今まで通り保存
     try {
       await updateProjectField(
         event.data.id,
