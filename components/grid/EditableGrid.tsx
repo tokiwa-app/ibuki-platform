@@ -15,7 +15,7 @@ interface EditableGridProps<T> {
   onSelect: (id: number) => void;
   onCellValueChanged: (event: CellValueChangedEvent<T>) => void;
   getRowId: (params: { data: T }) => string;
-  onGridReady?: (params: any) => void; // ★ 追加：API受渡し用
+  onGridReady?: (params: any) => void;
 }
 
 export default function EditableGrid<T>({
@@ -27,7 +27,7 @@ export default function EditableGrid<T>({
   onSelect,
   onCellValueChanged,
   getRowId,
-  onGridReady, // ★ 追加
+  onGridReady,
 }: EditableGridProps<T>) {
   if (loading) {
     return <div style={{ padding: 16 }}>読込中...</div>;
@@ -64,11 +64,11 @@ export default function EditableGrid<T>({
         rowData={rowData}
         columnDefs={columnDefs}
         enableCellTextSelection
-        enableRangeSelection
+        // ★ Community版では使えないため enableRangeSelection を削除しました
         copyHeadersToClipboard={false}
         defaultColDef={defaultColDef}
         rowSelection={{
-          mode: 'multiRow',
+          mode: 'multiRow', // または 1行だけにするなら 'singleRow'
           checkboxes: true,
           headerCheckbox: true,
           selectTextOnFocus: false,
@@ -85,7 +85,7 @@ export default function EditableGrid<T>({
           return false;
         }}
         getRowId={getRowId}
-        onGridReady={onGridReady} // ★ 追加：AgGridReactにバインド
+        onGridReady={onGridReady}
         onRowClicked={(event) => {
           if (event.data) {
             // @ts-ignore
