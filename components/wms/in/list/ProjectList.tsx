@@ -1,5 +1,11 @@
 'use client';
 
+import { AgGridReact } from 'ag-grid-react';
+import { ColDef } from 'ag-grid-community';
+
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+
 interface Project {
   id: number;
   project_name: string;
@@ -7,7 +13,7 @@ interface Project {
   expected_start_date: string | null;
 }
 
-interface Props {
+interface ProjectListProps {
   projects: Project[];
   loading: boolean;
   error: string;
@@ -21,102 +27,85 @@ export default function ProjectList({
   error,
   selectedId,
   onSelect,
-}: Props) {
-  return (
-    <div
-      style={{
-        height: "100%",
-        overflowY: "auto",
-      }}
-    >
-      <h3
+}: ProjectListProps) {
+  const columnDefs: ColDef<Project>[] = [
+    {
+      field: 'expected_start_date',
+      headerName: '予定開始日',
+      width: 140,
+      valueFormatter: (params) => {
+        if (!params.value) return '';
+
+        return new Date(params.value).toLocaleDateString('ja-JP');
+      },
+    },
+    {
+      field: 'customer',
+      headerName: '顧客',
+      width: 180,
+    },
+    {
+      field: 'project_name',
+      headerName: '案件名',
+      flex: 1,
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div style={{ padding: 16 }}>
+        案件読込中...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
         style={{
           padding: 16,
-          margin: 0,
+          color: '#c62828',
         }}
       >
-        入庫案件
-      </h3>
+        {error}
+      </div>
+    );
+  }
 
-      {loading && (
-        <div style={{ padding: 16 }}>
-          読込中...
-        </div>
-      )}
-
-      {error && (
-        <div
-          style={{
-            padding: 16,
-            color: "#c62828",
-          }}
-        >
-          {error}
-        </div>
-      )}
-
-      {!loading &&
-        !error &&
-        projects.map((project) => (
-          <div
-            key={project.id}
-            onClick={() => onSelect(project.id)}
-            style={{
-              padding: 12,
-              cursor: "pointer",
-              backgroundColor:
-                selectedId === project.id
-                  ? "#e5e7eb"
-                  : "#fff",
-              borderBottom: "1px solid #eee",
-            }}
-          >
-            <div
-              style={{
-                fontWeight: "bold",
-              }}
-            >
-              {project.project_name}
-            </div>
-
-            <div
-              style={{
-                fontSize: 12,
-                color: "#666",
-                marginTop: 4,
-              }}
-            >
-              {project.customer ?? "-"}
-            </div>
-
-            <div
-              style={{
-                fontSize: 12,
-                color: "#999",
-                marginTop: 2,
-              }}
-            >
-              {project.expected_start_date
-                ? new Date(
-                    project.expected_start_date
-                  ).toLocaleDateString("ja-JP")
-                : "-"}
-            </div>
-          </div>
-        ))}
-
-      {!loading &&
-        !error &&
-        projects.length === 0 && (
-          <div
-            style={{
-              padding: 16,
-              color: "#777",
-            }}
-          >
-            案件がありません
-          </div>
-        )}
+  return (
+    <div
+      className="ag-theme-quartz"
+      style={{
+        height: '100%',
+        width: '100%',
+      }}
+    >
+      <AgGridReact<Project>
+        rowData={projects}
+        columnDefs={columnDefs}
+        enableCellTextSelection={true}
+        enableRangeSelection={true}
+        copyHeadersToClipboard={false}
+        defaultColDef={{
+          sortable: true,
+          filter: true,
+          resizable: true,
+        }}
+        rowSelection="single"
+        getRowId={(params) =>
+          params.data.id.toString()
+        }
+        onRowClicked={(event) => {
+          if (event.data) {
+            onSelect(event.data.id);
+          }
+        }}
+        getRowClass={(params) =>
+          params.data?.id === selectedId
+            ? 'selected-row'
+            : ''
+        }
+      />
     </div>
   );
 }
