@@ -58,6 +58,7 @@ export default function Home() {
     const { data, error } = await supabase
       .from('user_tenants')
       .select('*')
+      .eq('email', email);
 
     console.log('error =', error);
     console.log('data =', data);
