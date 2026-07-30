@@ -64,14 +64,10 @@ export default function EditableGrid<T>({
           resizable: true,
         }}
         rowSelection="single"
-        
-        {/* === Access風のサクサクした操作感にするための設定 === */}
-        singleClickEdit={true}                   {/* 1クリックで即座に編集状態にする */}
-        enterNavigatesVertically={true}         {/* Enterキーで上下に移動する */}
-        enterNavigatesVerticallyAfterEdit={true} {/* 編集完了後にEnterで下の行に移動する */}
-        stopEditingWhenCellsLoseFocus={true}     {/* フォーカスが外れたら編集を確定 */}
-        {/* =================================================== */}
-
+        singleClickEdit={true}
+        enterNavigatesVertically={true}
+        enterNavigatesVerticallyAfterEdit={true}
+        stopEditingWhenCellsLoseFocus={true}
         getRowId={getRowId}
         onRowClicked={(event) => {
           if (event.data) {
