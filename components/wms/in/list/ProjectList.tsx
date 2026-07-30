@@ -18,7 +18,7 @@ interface ProjectListProps {
   error: string;
   selectedId: number | null;
   onSelect: (id: number) => void;
-  // データ全体を更新するためのコールバックを親から受け取る想定
+  // 親側で projects の状態を更新するためのコールバック
   onProjectsChange?: (newProjects: Project[]) => void;
 }
 
@@ -73,14 +73,15 @@ export default function ProjectList({
       return;
     }
 
-    let updatedProjects = [...projects];
+    // projects 配列のコピーを作成してイミュータブルに更新準備
+    const updatedProjects = [...projects];
     const targetIndex = updatedProjects.findIndex((p) => p.id === event.data!.id);
     if (targetIndex === -1) return;
 
-    // データのコピーを作成
     const updatedRow = { ...updatedProjects[targetIndex] };
     updatedRow[field as keyof Project] = event.newValue;
 
+    // 顧客コード変更時の追加フェッチ処理
     if (field === 'customer') {
       try {
         const res = await fetch(
@@ -97,12 +98,14 @@ export default function ProjectList({
         updatedRow.customer_name = customer.customer_name;
       } catch (error) {
         console.error(error);
-        // エラー時は元の値に戻す
+        // エラー時は変更を元に戻す
         updatedRow.customer = event.oldValue;
         updatedRow.customer_name = null;
         
         updatedProjects[targetIndex] = updatedRow;
-        if (onProjectsChange) onProjectsChange(updatedProjects);
+        if (onProjectsChange) {
+          onProjectsChange(updatedProjects);
+        }
         return;
       }
     }
@@ -110,13 +113,17 @@ export default function ProjectList({
     try {
       await updateProject(updatedRow);
       updatedProjects[targetIndex] = updatedRow;
-      if (onProjectsChange) onProjectsChange(updatedProjects);
+      if (onProjectsChange) {
+        onProjectsChange(updatedProjects);
+      }
     } catch (error) {
       console.error('保存失敗', error);
-      // 失敗時は元の値に戻す
+      // 失敗時は変更を元に戻す
       updatedRow[field as keyof Project] = event.oldValue;
       updatedProjects[targetIndex] = updatedRow;
-      if (onProjectsChange) onProjectsChange(updatedProjects);
+      if (onProjectsChange) {
+        onProjectsChange(updatedProjects);
+      }
     }
   }
 
