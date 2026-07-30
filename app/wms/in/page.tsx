@@ -6,6 +6,8 @@ import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
 import ProjectList from '../../../components/wms/in/list/ProjectList';
 import ProjectDetail from '../../../components/wms/in/Detail/ProjectDetail';
 
+import { getProjects } from '../../../components/supabase/projects/getProjects';
+
 interface Project {
   id: number;
   project_name: string;
@@ -37,15 +39,8 @@ export default function PurchaseReceiptPage() {
 
       try {
 
-        const res = await fetch(
-          "/api/supabase/projects?projectType=入庫案件"
-        );
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error);
-        }
+        const data =
+          await getProjects("入庫案件");
 
         setProjects(data);
 
