@@ -9,7 +9,7 @@ import {
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-import { updateProjectField } from '@/components/supabase/projects/updateProjectField';
+import { updateProjectField } from '../../../components/supabase/projects/updateProjectField';
 
 interface Project {
   id: number;
