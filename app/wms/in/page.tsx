@@ -12,57 +12,38 @@ interface Project {
   id: number;
   project_name: string;
   customer: string | null;
+  customer_name?: string | null;
   company: string | null;
   status: string | null;
+  expected_start_date?: string | null;
 }
 
 export default function PurchaseReceiptPage() {
-
-  const [projectId, setProjectId] =
-    useState<number | null>(null);
-
-  const [projects, setProjects] =
-    useState<Project[]>([]);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
+  const [projectId, setProjectId] = useState<number | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-
     async function fetchProjects() {
-
       setLoading(true);
-      setError("");
+      setError('');
 
       try {
-
-        const data =
-          await getProjects("入庫案件");
-
-        setProjects(data);
-
+        const data = await getProjects('入庫案件');
+        // 配列であることを保証してセット（Cannot read properties of undefined 対策）
+        setProjects(Array.isArray(data) ? data : []);
       } catch (e) {
-
         setProjects([]);
-
         setError(
-          e instanceof Error
-            ? e.message
-            : "取得失敗"
+          e instanceof Error ? e.message : '取得失敗'
         );
-
       } finally {
-
         setLoading(false);
-
       }
     }
 
     void fetchProjects();
-
   }, []);
 
   return (
@@ -79,7 +60,6 @@ export default function PurchaseReceiptPage() {
         title="入庫管理"
         titleBackground="#2e7d32"
         titleColor="#fff"
-
         headerRight={
           <button
             style={{
@@ -95,7 +75,6 @@ export default function PurchaseReceiptPage() {
             取引先コード 🔍
           </button>
         }
-
         left={
           <ProjectList
             projects={projects}
@@ -103,9 +82,9 @@ export default function PurchaseReceiptPage() {
             error={error}
             selectedId={projectId}
             onSelect={setProjectId}
+            onProjectsChange={setProjects}
           />
         }
-
         right={
           <ProjectDetail
             projectId={projectId}
