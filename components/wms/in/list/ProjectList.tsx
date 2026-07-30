@@ -1,8 +1,8 @@
 'use client';
 
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
-import EditableGrid from '../../../../components/ag-grid/EditableGrid';
-import { updateProject } from '../../../components/supabase/projects/updateProject';
+import EditableGrid from '../../../ag-grid/EditableGrid';
+import { updateProject } from '../../../supabase/projects/updateProject';
 
 interface Project {
   id: number;
