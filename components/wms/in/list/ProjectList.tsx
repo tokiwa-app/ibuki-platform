@@ -7,7 +7,7 @@ interface Project {
   expected_start_date: string | null;
 }
 
-interface ProjectListProps {
+interface Props {
   projects: Project[];
   loading: boolean;
   error: string;
@@ -21,110 +21,102 @@ export default function ProjectList({
   error,
   selectedId,
   onSelect,
-}: ProjectListProps) {
+}: Props) {
   return (
     <div
       style={{
-        width: "100%",
         height: "100%",
-        backgroundColor: "#fff",
-        display: "flex",
-        flexDirection: "column",
+        overflowY: "auto",
       }}
     >
-      <div
+      <h3
         style={{
-          padding: 12,
-          borderBottom: "1px solid #ddd",
-          fontSize: 14,
-          fontWeight: "bold",
-          backgroundColor: "#fafafa",
+          padding: 16,
+          margin: 0,
         }}
       >
-        プロジェクト一覧
-      </div>
+        入庫案件
+      </h3>
 
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-        }}
-      >
-        {loading && (
-          <div style={{ padding: 12 }}>
-            読込中...
-          </div>
-        )}
+      {loading && (
+        <div style={{ padding: 16 }}>
+          読込中...
+        </div>
+      )}
 
-        {error && (
+      {error && (
+        <div
+          style={{
+            padding: 16,
+            color: "#c62828",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {!loading &&
+        !error &&
+        projects.map((project) => (
           <div
+            key={project.id}
+            onClick={() => onSelect(project.id)}
             style={{
               padding: 12,
-              color: "#c62828",
+              cursor: "pointer",
+              backgroundColor:
+                selectedId === project.id
+                  ? "#e5e7eb"
+                  : "#fff",
+              borderBottom: "1px solid #eee",
             }}
           >
-            {error}
-          </div>
-        )}
-
-        {!loading &&
-          projects.map((project) => {
-            const selected =
-              project.id === selectedId;
-
-            return (
-              <div
-                key={project.id}
-                onClick={() =>
-                  onSelect(project.id)
-                }
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "120px 140px 1fr",
-                  gap: 8,
-                  padding: "10px 12px",
-                  borderBottom:
-                    "1px solid #eee",
-                  cursor: "pointer",
-                  backgroundColor:
-                    selected
-                      ? "#e8f5e9"
-                      : "#fff",
-                }}
-              >
-                <div>
-                  {project.expected_start_date ?? "-"}
-                </div>
-
-                <div>
-                  {project.customer ?? "-"}
-                </div>
-
-                <div
-                  style={{
-                    fontWeight: "bold",
-                  }}
-                >
-                  {project.project_name}
-                </div>
-              </div>
-            );
-          })}
-
-        {!loading &&
-          !error &&
-          projects.length === 0 && (
             <div
               style={{
-                padding: 12,
-                color: "#777",
+                fontWeight: "bold",
               }}
             >
-              案件がありません
+              {project.project_name}
             </div>
-          )}
-      </div>
+
+            <div
+              style={{
+                fontSize: 12,
+                color: "#666",
+                marginTop: 4,
+              }}
+            >
+              {project.customer ?? "-"}
+            </div>
+
+            <div
+              style={{
+                fontSize: 12,
+                color: "#999",
+                marginTop: 2,
+              }}
+            >
+              {project.expected_start_date
+                ? new Date(
+                    project.expected_start_date
+                  ).toLocaleDateString("ja-JP")
+                : "-"}
+            </div>
+          </div>
+        ))}
+
+      {!loading &&
+        !error &&
+        projects.length === 0 && (
+          <div
+            style={{
+              padding: 16,
+              color: "#777",
+            }}
+          >
+            案件がありません
+          </div>
+        )}
     </div>
   );
 }
