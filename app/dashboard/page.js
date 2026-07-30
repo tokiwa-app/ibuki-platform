@@ -59,7 +59,7 @@ export default function Dashboard() {
 
     {
       title: 'MES',
-      description: 'ハンディ・現場作業管理',
+      description: '製造実行システム',
       path: '/mes',
     },
 
