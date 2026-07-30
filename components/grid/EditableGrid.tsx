@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 
 // TSVを2次元配列にパース
 export function parseTsvToMatrix(tsv: string): string[][] {
@@ -20,22 +20,24 @@ interface EditableGridProps<T extends Record<string, any>> {
 }
 
 export default function EditableGrid<T extends Record<string, any>>({
-  data,
+  data = [],
   columns,
   onChange,
   selectedId,
   onSelect,
 }: EditableGridProps<T>) {
+  // 安全保障：dataが万が一undefinedやnullでもビルドエラーや実行時エラーにならないようにする
+  const safeData = Array.isArray(data) ? data : [];
+
   // 1. オブジェクトの配列を、自作テーブル用の2次元配列（マトリックス）に変換
-  const matrix = data.map((row) =>
+  const matrix = safeData.map((row) =>
     columns.map((col) => String(row[col.key] ?? ""))
   );
 
   // 2次元配列の変更を、元のオブジェクト配列に戻して親に通知するヘルパー
   const updateMatrixToObjects = (newMatrix: string[][]) => {
     const updatedData = newMatrix.map((rowValues, rIdx) => {
-      // 既存のオブジェクトがあればベースを引き継ぐ、なければ新規作成
-      const existing = data[rIdx] || { id: null };
+      const existing = safeData[rIdx] || { id: null };
       const newObj: any = { ...existing };
 
       columns.forEach((col, cIdx) => {
@@ -45,7 +47,6 @@ export default function EditableGrid<T extends Record<string, any>>({
       return newObj as T;
     });
 
-    // 完全な空行（全カラムが空）は除外するなどの調整
     const filtered = updatedData.filter((row) =>
       columns.some((col) => String(row[col.key] ?? "").trim() !== "")
     );
@@ -59,18 +60,6 @@ export default function EditableGrid<T extends Record<string, any>>({
 
   const createEmptyRow = (cols: number) => Array.from({ length: cols }, () => "");
   const getRow = (r: number) => (r < totalRows ? matrix[r] : createEmptyRow(totalCols));
-
-  const columnLabel = (index: number) => {
-    let n = index;
-    let label = "";
-    while (true) {
-      const rem = n % 26;
-      label = String.fromCharCode(65 + rem) + label;
-      n = Math.floor(n / 26) - 1;
-      if (n < 0) break;
-    }
-    return label;
-  };
 
   const normalize = (r1: number, c1: number, r2: number, c2: number) => ({
     r1: Math.max(0, Math.min(r1, r2)),
@@ -90,8 +79,6 @@ export default function EditableGrid<T extends Record<string, any>>({
 
   const [dragRowFrom, setDragRowFrom] = useState<number | null>(null);
   const [dragRowTo, setDragRowTo] = useState<number | null>(null);
-  const [dragColFrom, setDragColFrom] = useState<number | null>(null);
-  const [dragColTo, setDragColTo] = useState<number | null>(null);
 
   const isSingle = selection && selection.r1 === selection.r2 && selection.c1 === selection.c2;
   const active = isSingle ? { r: selection.r1, c: selection.c1 } : null;
@@ -112,10 +99,6 @@ export default function EditableGrid<T extends Record<string, any>>({
     const next = matrix.filter((_, i) => i !== rowIndex);
     updateMatrixToObjects(next);
     setSelection(null);
-  };
-
-  const addColumn = (index?: number) => {
-    // 列追加が必要な場合は親のcolumns定義に合わせて拡張するかたちになります
   };
 
   const reorderRows = (from: number, to: number) => {
@@ -218,8 +201,6 @@ export default function EditableGrid<T extends Record<string, any>>({
     dragColRef.current = null;
     setDragRowFrom(null);
     setDragRowTo(null);
-    setDragColFrom(null);
-    setDragColTo(null);
   };
 
   return (
@@ -235,7 +216,7 @@ export default function EditableGrid<T extends Record<string, any>>({
         <thead>
           <tr>
             <th className="border border-gray-300 bg-gray-100 w-10 p-0" />
-            {columns.map((col, c) => (
+            {columns.map((col) => (
               <th
                 key={String(col.key)}
                 className="border border-gray-300 bg-gray-100 px-2 py-1 select-none text-left font-semibold text-gray-700"
@@ -251,7 +232,7 @@ export default function EditableGrid<T extends Record<string, any>>({
             const row = getRow(r);
             const isBlankRow = r >= totalRows;
             const isRowDropTarget = dragRowFrom !== null && dragRowTo === r;
-            const rowId = data[r]?.id;
+            const rowId = safeData[r]?.id;
 
             return (
               <tr
