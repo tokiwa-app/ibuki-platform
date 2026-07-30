@@ -46,18 +46,16 @@ export default function Home() {
     initialize();
   }, []);
 
-async function loadTenants(email) {
-  setBusy(true);
-  setMsg('');
+  async function loadTenants(email) {
+    setBusy(true);
+    setMsg('');
 
-  try {
-    const { data, error } = await supabase
-      .from('user_tenants')
-      .select('tenant_id')
-      .eq('email', email)
-      .order('tenant_id', { ascending: true });
-
-    ...
+    try {
+      const { data, error } = await supabase
+        .from('user_tenants')
+        .select('tenant_id')
+        .eq('email', email)
+        .order('tenant_id', { ascending: true });
 
       if (error) {
         throw error;
