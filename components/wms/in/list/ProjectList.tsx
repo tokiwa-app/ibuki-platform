@@ -4,8 +4,7 @@ interface Project {
   id: number;
   project_name: string;
   customer: string | null;
-  company: string | null;
-  status: string | null;
+  expected_start_date: string | null;
 }
 
 interface ProjectListProps {
@@ -82,7 +81,7 @@ export default function ProjectList({
                 style={{
                   display: "grid",
                   gridTemplateColumns:
-                    "100px 120px 120px 1fr",
+                    "120px 140px 1fr",
                   gap: 8,
                   padding: "10px 12px",
                   borderBottom:
@@ -95,15 +94,11 @@ export default function ProjectList({
                 }}
               >
                 <div>
-                  {project.status ?? "-"}
+                  {project.expected_start_date ?? "-"}
                 </div>
 
                 <div>
                   {project.customer ?? "-"}
-                </div>
-
-                <div>
-                  {project.company ?? "-"}
                 </div>
 
                 <div
