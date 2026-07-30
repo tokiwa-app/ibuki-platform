@@ -65,6 +65,20 @@ export default function EditableGrid<T>({
         }}
         rowSelection="single"
         stopEditingWhenCellsLoseFocus={true}
+        
+        {/* ★ 編集中に上下キーが押されたとき、グリッド側のデフォルト動作（編集確定＆移動）を有効にする */}
+        suppressKeyboardEvent={(params) => {
+          const event = params.event;
+          const key = event.key;
+          const isEditing = params.editing;
+
+          // 編集中に上下キーが押された場合、グリッドにイベントを処理させるため false を返す
+          if (isEditing && (key === 'ArrowUp' || key === 'ArrowDown')) {
+            return false; 
+          }
+          return false;
+        }}
+
         getRowId={getRowId}
         onRowClicked={(event) => {
           if (event.data) {
