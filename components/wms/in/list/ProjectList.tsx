@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
-import { updateProject } from '../../../supabase/projects/updateProject';
-import { supabase } from '../../../lib/supabaseClient';
+import { updateProject } from '../../../../supabase/projects/updateProject'; // パス調整が必要な場合は適宜変更
+import { supabase } from '../../../../lib/supabaseClient'; // ★ 階層に合わせてパスを修正
 
 interface Project {
   id: number;
@@ -116,9 +116,7 @@ export default function ProjectList({
       setProjects((prevData) => {
         let newData = [...prevData];
 
-        // 複製された新しい行をそれぞれ適切な位置（元の行の下など）に追加
         for (const newRow of insertedRows) {
-          // どの行から複製されたかを特定するため、元データの名前や特徴から逆引きするか、末尾に追加する
           newData.push(newRow);
         }
 
