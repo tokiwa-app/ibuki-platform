@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
-import { updateProject } from '../../../../supabase/projects/updateProject';
+import { updateProject } from '../../../supabase/projects/updateProject';
 import { supabase } from '../../../../lib/supabaseClient';
 
 interface Project {
