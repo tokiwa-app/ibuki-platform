@@ -33,7 +33,7 @@ export default function ProjectList({
 }: ProjectListProps) {
   const [gridApi, setGridApi] = useState<any>(null);
   
-  // 複製処理中であることを示すフラグ（重複保存や不要なイベントの暴発を防ぐため）
+  // 複製処理中であることを示すフラグ（不要なイベントの暴発を防ぐため）
   const isDuplicatingRef = useRef(false);
 
   const columnDefs: ColDef<Project>[] = [
@@ -77,7 +77,6 @@ export default function ProjectList({
       return;
     }
 
-    // 複製処理が二重で走ったり、不要な保存イベントを誘発しないようにガード
     if (isDuplicatingRef.current) return;
     isDuplicatingRef.current = true;
 
@@ -119,22 +118,13 @@ export default function ProjectList({
         throw new Error('行の追加に失敗しました');
       }
 
-      // 5. フロント側のstate（projects配列）を更新して画面に即座に反映
-      setProjects((prevData) => {
-        let newData = [...prevData];
-
-        for (const newRow of insertedRows) {
-          newData.push(newRow);
-        }
-
-        return newData;
-      });
+      // 5. フロント側のstate（projects配列）をシンプルに結合して更新
+      setProjects((prevData) => [...prevData, ...insertedRows]);
 
     } catch (error: any) {
       console.error('複製失敗', error);
       alert('複製に失敗しました: ' + (error.message || error));
     } finally {
-      // 処理が終わったらガードを解除
       isDuplicatingRef.current = false;
     }
   };
@@ -142,7 +132,6 @@ export default function ProjectList({
   async function handleCellValueChanged(
     event: CellValueChangedEvent<Project>,
   ) {
-    // 複製処理の最中であれば、セルの変更イベント（不要なupdate）を完全に無視する
     if (isDuplicatingRef.current) {
       return;
     }
