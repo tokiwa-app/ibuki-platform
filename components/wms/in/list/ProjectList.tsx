@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
 import { updateProject } from '../../../supabase/projects/updateProject';
-import { insertProject } from '../../../supabase/projects/insertProject'; // ★ 追加：インサート用関数
+import { insertProject } from '../../../supabase/projects/insertProject';
 
 interface Project {
   id: number;
@@ -64,8 +64,8 @@ export default function ProjectList({
     },
   ];
 
-  // 選択された行を複製して画面上に追加する処理
-  const handleDuplicate = () => {
+  // ★ 修正：AG Gridから選択行のデータ（またはIDを元にしたデータ）を取得してSupabaseに追加する処理
+  const handleDuplicate = async () => {
     if (!gridApi) return;
 
     const selectedNodes = gridApi.getSelectedNodes();
@@ -74,54 +74,24 @@ export default function ProjectList({
       return;
     }
 
-    setProjects((prevData) => {
-      let newData = [...prevData];
-      const sortedNodes = [...selectedNodes].sort((a, b) => b.rowIndex - b.rowIndex);
-
-      sortedNodes.forEach((node) => {
-        const originalRow = node.data;
-        const index = newData.findIndex((row) => row.id === originalRow.id);
-
-        if (index !== -1) {
-          const duplicatedRow: Project = {
-            ...originalRow,
-            id: Date.now() + Math.random(), // 仮ID
-            project_name: `${originalRow.project_name} (コピー)`,
-          };
-
-          newData.splice(index + 1, 0, duplicatedRow);
-        }
-      });
-
-      return newData;
-    });
-  };
-
-  // ★ 追加：選択した行をSupabaseに新規追加（インサート）する処理
-  const handleInsertToSupabase = async () => {
-    if (!gridApi) return;
-
-    const selectedRows = gridApi.getSelectedRows();
-    if (selectedRows.length === 0) {
-      alert('Supabaseに追加する行にチェックを入れてください。');
-      return;
-    }
-
     try {
-      // 選択された行の先頭（または複数対応ならループ）をインサート
-      // ※仮ID（Date.nowなど）が含まれているとDB側でエラーになる場合は除外するか、DB側の自動採番に任せます
-      const targetRow = selectedRows[0];
-      
-      // IDを外す（データベース側で自動採番される場合）
-      const { id, ...dataToInsert } = targetRow;
+      const originalRow = selectedNodes[0].data;
 
-      await insertProject(dataToInsert);
+      // 複製用のデータオブジェクトを作成（idは自動採番させるため除外）
+      const { id, ...dataToInsert } = originalRow;
+      const newProjectData = {
+        ...dataToInsert,
+        project_name: `${originalRow.project_name || ''} (コピー)`,
+      };
 
-      alert('Supabaseにデータを追加しました！');
-      // 必要に応じてデータを再取得・更新する処理をここに挟むとより確実です
+      // Supabaseにインサート
+      await insertProject(newProjectData);
+
+      alert('Supabaseへの複製・追加が完了しました！ページを再読み込みしてください。');
+      // ※必要に応じてここでprojectsリストの再取得などを呼び出してください
     } catch (error: any) {
-      console.error('追加失敗', error);
-      alert('追加に失敗しました: ' + error.message);
+      console.error('複製失敗', error);
+      alert('複製に失敗しました: ' + error.message);
     }
   };
 
@@ -181,14 +151,9 @@ export default function ProjectList({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* ボタンエリア */}
       <div style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
         <button onClick={handleDuplicate} style={{ padding: '6px 12px', cursor: 'pointer' }}>
-          選択した行を複製して下に追加
-        </button>
-        {/* ★ 追加：Supabase追加ボタン */}
-        <button onClick={handleInsertToSupabase} style={{ padding: '6px 12px', cursor: 'pointer', backgroundColor: '#e0f2fe' }}>
-          選択した行をSupabaseに追加
+          選択した行を複製してSupabaseに追加
         </button>
       </div>
 
