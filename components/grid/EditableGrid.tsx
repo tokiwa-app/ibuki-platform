@@ -64,11 +64,10 @@ export default function EditableGrid<T>({
         rowData={rowData}
         columnDefs={columnDefs}
         enableCellTextSelection
-        // ★ Community版では使えないため enableRangeSelection を削除しました
         copyHeadersToClipboard={false}
         defaultColDef={defaultColDef}
         rowSelection={{
-          mode: 'multiRow', // または 1行だけにするなら 'singleRow'
+          mode: 'multiRow',
           checkboxes: true,
           headerCheckbox: true,
           selectTextOnFocus: false,
