@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
 import { updateProject } from '../../../supabase/projects/updateProject';
-import { insertProject } from '../../../supabase/projects/insertProject';
+import { duplicateProject } from '../../../supabase/projects/duplicateProject'; // ★ 変更：duplicateProjectをインポート
 
 interface Project {
   id: number;
@@ -64,7 +64,7 @@ export default function ProjectList({
     },
   ];
 
-  // ★ 修正：AG Gridから選択行のデータ（またはIDを元にしたデータ）を取得してSupabaseに追加する処理
+  // ★ 変更：AG Gridからは「IDだけ」を渡してSupabase側で完全複製を実行する処理
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
@@ -75,20 +75,14 @@ export default function ProjectList({
     }
 
     try {
-      const originalRow = selectedNodes[0].data;
+      // 選択された行の「IDだけ」を取得
+      const targetId = selectedNodes[0].data.id;
 
-      // 複製用のデータオブジェクトを作成（idは自動採番させるため除外）
-      const { id, ...dataToInsert } = originalRow;
-      const newProjectData = {
-        ...dataToInsert,
-        project_name: `${originalRow.project_name || ''} (コピー)`,
-      };
+      // IDを関数に渡してSupabaseで複製
+      await duplicateProject(targetId);
 
-      // Supabaseにインサート
-      await insertProject(newProjectData);
-
-      alert('Supabaseへの複製・追加が完了しました！ページを再読み込みしてください。');
-      // ※必要に応じてここでprojectsリストの再取得などを呼び出してください
+      alert('Supabaseへの複製が完了しました！ページを再読み込みして確認してください。');
+      // ※必要に応じてここでデータを再取得する処理を呼び出してください
     } catch (error: any) {
       console.error('複製失敗', error);
       alert('複製に失敗しました: ' + error.message);
