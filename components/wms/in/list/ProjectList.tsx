@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
 import { updateProject } from '../../../supabase/projects/updateProject';
-import { supabase } from '../../../lib/supabaseClient'; // 画面内で直接Supabaseを叩くためインポート
+import { supabase } from '../../../lib/supabaseClient';
 
 interface Project {
   id: number;
@@ -64,7 +64,7 @@ export default function ProjectList({
     },
   ];
 
-  // 選択された行を複製してSupabaseに追加し、画面に即時反映する処理
+  // 選択された行のID配列を渡して一括複製し、画面を更新する処理
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
@@ -75,46 +75,50 @@ export default function ProjectList({
     }
 
     try {
-      const targetId = selectedNodes[0].data.id;
+      // 1. 選択された行のIDを配列として抽出
+      const targetIds = selectedNodes.map((node) => node.data.id);
 
-      // 1. 元のデータを取得
-      const { data: original, error: fetchError } = await supabase
+      // 2. 指定された複数のIDの元データをまとめて取得
+      const { data: originals, error: fetchError } = await supabase
         .from('projects')
         .select('*')
-        .eq('id', targetId)
-        .single();
+        .in('id', targetIds);
 
-      if (fetchError || !original) {
+      if (fetchError || !originals || originals.length === 0) {
         throw new Error('複製元のデータが見つかりません');
       }
 
-      // 2. idを除外してコピー用データを作成
-      const { id: _, ...rest } = original;
-      const newRowData = {
-        ...rest,
-        project_name: `${original.project_name || ''} (コピー)`,
-        updated_at: new Date().toISOString(),
-      };
+      // 3. 各データの id を除外して、(コピー) を付与した新しいデータの配列を作る
+      const newRowsData = originals.map((original) => {
+        const { id: _, ...rest } = original;
+        return {
+          ...rest,
+          project_name: `${original.project_name || ''} (コピー)`,
+          updated_at: new Date().toISOString(),
+        };
+      });
 
-      // 3. Supabaseにインサートして新しい行データを取得
-      const { data: newRow, error: insertError } = await supabase
+      // 4. まとめてインサートし、新しく作られたすべての行データを一括で取得
+      const { data: insertedRows, error: insertError } = await supabase
         .from('projects')
-        .insert([newRowData])
-        .select()
-        .single();
+        .insert(newRowsData)
+        .select();
 
       if (insertError) {
         throw insertError;
       }
 
-      // 4. フロント側のstate（projects配列）を更新して画面に即座に反映
+      if (!insertedRows) {
+        throw new Error('行の追加に失敗しました');
+      }
+
+      // 5. フロント側のstate（projects配列）を更新して画面に即座に反映
       setProjects((prevData) => {
         let newData = [...prevData];
-        const index = newData.findIndex((row) => row.id === targetId);
 
-        if (index !== -1) {
-          newData.splice(index + 1, 0, newRow);
-        } else {
+        // 複製された新しい行をそれぞれ適切な位置（元の行の下など）に追加
+        for (const newRow of insertedRows) {
+          // どの行から複製されたかを特定するため、元データの名前や特徴から逆引きするか、末尾に追加する
           newData.push(newRow);
         }
 
@@ -185,7 +189,7 @@ export default function ProjectList({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
         <button onClick={handleDuplicate} style={{ padding: '6px 12px', cursor: 'pointer' }}>
-          選択した行を複製して下に追加
+          選択した行を複製して追加
         </button>
       </div>
 
