@@ -71,7 +71,7 @@ export default function ProjectList({
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
-    // ★ まず現在のセルの編集を強制終了してフォーカスを外し、保存を完了させる
+    // 現在のセルの編集を強制終了してフォーカスを外す
     gridApi.stopEditing();
 
     const selectedNodes = gridApi.getSelectedNodes();
@@ -87,7 +87,7 @@ export default function ProjectList({
       // 1. 選択された行のIDを配列として抽出
       const targetIds = selectedNodes.map((node) => node.data.id);
 
-      // 2. 指定された複数のIDの元データをまとめて取得
+      // 2. 指定された複数のIDの元データを取得
       const { data: originals, error: fetchError } = await supabase
         .from('projects')
         .select('*')
@@ -99,15 +99,17 @@ export default function ProjectList({
 
       // 3. 各データの id を除外して、(コピー) を付与した新しいデータの配列を作る
       const newRowsData = originals.map((original) => {
-        const { id: _, ...rest } = original;
+        const clone = { ...original };
+        delete (clone as any).id;
+
         return {
-          ...rest,
+          ...clone,
           project_name: `${original.project_name || ''} (コピー)`,
           updated_at: new Date().toISOString(),
         };
       });
 
-      // 4. まとめてインサートし、新しく作られたすべての行データを一括で取得
+      // 4. 新しいデータをインサートする
       const { data: insertedRows, error: insertError } = await supabase
         .from('projects')
         .insert(newRowsData)
@@ -117,11 +119,11 @@ export default function ProjectList({
         throw insertError;
       }
 
-      if (!insertedRows) {
+      if (!insertedRows || insertedRows.length === 0) {
         throw new Error('行の追加に失敗しました');
       }
 
-      // 5. フロント側のstate（projects配列）をシンプルに結合して更新
+      // 5. フロント側のstateを更新
       setProjects((prevData) => [...prevData, ...insertedRows]);
 
     } catch (error: any) {
