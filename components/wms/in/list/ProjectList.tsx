@@ -121,7 +121,8 @@ export default function ProjectList({
       }
 
       console.log('STEP 5: ステート更新');
-      setProjects((prevData) => [...prevData, ...insertedRows]);
+      // 関数型アップデートを使わず、直接現在の projects に結合する
+      setProjects([...projects, ...insertedRows]);
       console.log('STEP 6: 完了');
 
     } catch (error: any) {
