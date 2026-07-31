@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
 import { updateProject } from '../../../supabase/projects/updateProject';
-import { duplicateProject } from '../../../supabase/projects/duplicateProject'; // ★ 変更：duplicateProjectをインポート
+import { duplicateProject } from '../../../supabase/projects/duplicateProject';
 
 interface Project {
   id: number;
@@ -64,7 +64,7 @@ export default function ProjectList({
     },
   ];
 
-  // ★ 変更：AG Gridからは「IDだけ」を渡してSupabase側で完全複製を実行する処理
+  // ★ 変更：DBで複製された新しい行データ（新ID付き）を受け取り、画面のすぐ下に追加する
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
@@ -75,14 +75,27 @@ export default function ProjectList({
     }
 
     try {
-      // 選択された行の「IDだけ」を取得
       const targetId = selectedNodes[0].data.id;
 
-      // IDを関数に渡してSupabaseで複製
-      await duplicateProject(targetId);
+      // サーバー/DB側で複製し、新しい行データ（新ID入り）を受け取る
+      const newRow = await duplicateProject(targetId);
 
-      alert('Supabaseへの複製が完了しました！ページを再読み込みして確認してください。');
-      // ※必要に応じてここでデータを再取得する処理を呼び出してください
+      // フロント側のstate（projects配列）を更新して画面に即座に反映
+      setProjects((prevData) => {
+        let newData = [...prevData];
+        const index = newData.findIndex((row) => row.id === targetId);
+
+        if (index !== -1) {
+          // 元の行のすぐ下に新しい行を挿入
+          newData.splice(index + 1, 0, newRow);
+        } else {
+          // 見つからなければ末尾に追加
+          newData.push(newRow);
+        }
+
+        return newData;
+      });
+
     } catch (error: any) {
       console.error('複製失敗', error);
       alert('複製に失敗しました: ' + error.message);
@@ -147,7 +160,7 @@ export default function ProjectList({
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <div style={{ marginBottom: '8px', display: 'flex', gap: '8px' }}>
         <button onClick={handleDuplicate} style={{ padding: '6px 12px', cursor: 'pointer' }}>
-          選択した行を複製してSupabaseに追加
+          選択した行を複製して下に追加
         </button>
       </div>
 
