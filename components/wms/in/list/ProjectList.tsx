@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
-import { updateProject } from '../../../../supabase/projects/updateProject'; // パス調整が必要な場合は適宜変更
-import { supabase } from '../../../../lib/supabaseClient'; // ★ 階層に合わせてパスを修正
+import { updateProject } from '../../../supabase/projects/updateProject'; 
+import { supabase } from '../../../../lib/supabaseClient';
 
 interface Project {
   id: number;
