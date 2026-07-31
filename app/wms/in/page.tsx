@@ -99,7 +99,7 @@ export default function PurchaseReceiptPage() {
         left={
           <ProjectList
             projects={projects}
-            setProjects={setProjects} {/* ★ ここを追加しました */}
+            setProjects={setProjects}
             loading={loading}
             error={error}
             selectedId={projectId}
