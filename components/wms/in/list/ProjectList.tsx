@@ -71,6 +71,9 @@ export default function ProjectList({
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
+    // ★ まず現在のセルの編集を強制終了してフォーカスを外し、保存を完了させる
+    gridApi.stopEditing();
+
     const selectedNodes = gridApi.getSelectedNodes();
     if (selectedNodes.length === 0) {
       alert('複製する行にチェックを入れてください。');
