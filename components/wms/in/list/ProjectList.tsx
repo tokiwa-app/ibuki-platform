@@ -33,7 +33,6 @@ export default function ProjectList({
 }: ProjectListProps) {
   const [gridApi, setGridApi] = useState<any>(null);
   
-  // 複製処理中であることを示すフラグ（不要なイベントの暴発を防ぐため）
   const isDuplicatingRef = useRef(false);
 
   const columnDefs: ColDef<Project>[] = [
@@ -67,11 +66,9 @@ export default function ProjectList({
     },
   ];
 
-  // 選択された行のID配列を渡して一括複製し、画面を更新する処理
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
-    // 現在のセルの編集を強制終了してフォーカスを外す
     gridApi.stopEditing();
 
     const selectedNodes = gridApi.getSelectedNodes();
@@ -84,10 +81,10 @@ export default function ProjectList({
     isDuplicatingRef.current = true;
 
     try {
-      // 1. 選択された行のIDを配列として抽出
+      console.log('STEP 1: 処理開始');
       const targetIds = selectedNodes.map((node) => node.data.id);
 
-      // 2. 指定された複数のIDの元データを取得
+      console.log('STEP 2: データ取得中', targetIds);
       const { data: originals, error: fetchError } = await supabase
         .from('projects')
         .select('*')
@@ -97,7 +94,7 @@ export default function ProjectList({
         throw new Error('複製元のデータが見つかりません');
       }
 
-      // 3. 各データの id を除外して、(コピー) を付与した新しいデータの配列を作る
+      console.log('STEP 3: データ加工中');
       const newRowsData = originals.map((original) => {
         const clone = { ...original };
         delete (clone as any).id;
@@ -109,7 +106,7 @@ export default function ProjectList({
         };
       });
 
-      // 4. 新しいデータをインサートする
+      console.log('STEP 4: インサート中');
       const { data: insertedRows, error: insertError } = await supabase
         .from('projects')
         .insert(newRowsData)
@@ -123,11 +120,12 @@ export default function ProjectList({
         throw new Error('行の追加に失敗しました');
       }
 
-      // 5. フロント側のstateを更新
+      console.log('STEP 5: ステート更新');
       setProjects((prevData) => [...prevData, ...insertedRows]);
+      console.log('STEP 6: 完了');
 
     } catch (error: any) {
-      console.error('複製失敗', error);
+      console.error('複製失敗詳細:', error);
       alert('複製に失敗しました: ' + (error.message || error));
     } finally {
       isDuplicatingRef.current = false;
