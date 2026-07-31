@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { ColDef, CellValueChangedEvent } from 'ag-grid-community';
 import EditableGrid from '../../../grid/EditableGrid';
-import { updateProject } from '../../../supabase/projects/updateProject'; 
+import { updateProject } from '../../../../supabase/projects/updateProject';
 import { supabase } from '../../../../lib/supabaseClient';
 
 interface Project {
@@ -32,6 +32,9 @@ export default function ProjectList({
   onSelect,
 }: ProjectListProps) {
   const [gridApi, setGridApi] = useState<any>(null);
+  
+  // 複製処理中であることを示すフラグ（重複保存や不要なイベントの暴発を防ぐため）
+  const isDuplicatingRef = useRef(false);
 
   const columnDefs: ColDef<Project>[] = [
     {
@@ -73,6 +76,10 @@ export default function ProjectList({
       alert('複製する行にチェックを入れてください。');
       return;
     }
+
+    // 複製処理が二重で走ったり、不要な保存イベントを誘発しないようにガード
+    if (isDuplicatingRef.current) return;
+    isDuplicatingRef.current = true;
 
     try {
       // 1. 選択された行のIDを配列として抽出
@@ -126,12 +133,20 @@ export default function ProjectList({
     } catch (error: any) {
       console.error('複製失敗', error);
       alert('複製に失敗しました: ' + (error.message || error));
+    } finally {
+      // 処理が終わったらガードを解除
+      isDuplicatingRef.current = false;
     }
   };
 
   async function handleCellValueChanged(
     event: CellValueChangedEvent<Project>,
   ) {
+    // 複製処理の最中であれば、セルの変更イベント（不要なupdate）を完全に無視する
+    if (isDuplicatingRef.current) {
+      return;
+    }
+
     if (!event.data) return;
 
     const field = event.colDef.field;
