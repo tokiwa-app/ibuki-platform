@@ -20,16 +20,16 @@ export async function duplicateProject(id: number) {
     updated_at: new Date().toISOString(),
   };
 
-  // 3. Supabaseに新規インサート
-  const { data, error: insertError } = await supabase
+  // 3. Supabaseに新規インサートし、自動採番されたIDを含む新しい行データを取得する
+  const { data: insertedData, error: insertError } = await supabase
     .from("projects")
     .insert([newRowData])
-    .select()
+    .select() // ← これで新しく作られたデータが返る
     .single();
 
   if (insertError) {
     throw insertError;
   }
 
-  return data;
+  return insertedData; // 新しいIDが入った完成形のデータを返す！
 }
