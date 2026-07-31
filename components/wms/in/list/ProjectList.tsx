@@ -64,7 +64,7 @@ export default function ProjectList({
     },
   ];
 
-  // ★ 変更：DBで複製された新しい行データ（新ID付き）を受け取り、画面のすぐ下に追加する
+  // 選択された行を複製してSupabaseに追加し、画面に即時反映する処理
   const handleDuplicate = async () => {
     if (!gridApi) return;
 
@@ -77,28 +77,27 @@ export default function ProjectList({
     try {
       const targetId = selectedNodes[0].data.id;
 
-      // サーバー/DB側で複製し、新しい行データ（新ID入り）を受け取る
+      // 1. DB側で複製し、新しい行データ（新ID入り）を受け取る
       const newRow = await duplicateProject(targetId);
 
-      // フロント側のstate（projects配列）を更新して画面に即座に反映
+      // 2. フロント側のstate（projects配列）を更新して画面に即座に反映
       setProjects((prevData) => {
         let newData = [...prevData];
         const index = newData.findIndex((row) => row.id === targetId);
 
         if (index !== -1) {
-          // 元の行のすぐ下に新しい行を挿入
           newData.splice(index + 1, 0, newRow);
         } else {
-          // 見つからなければ末尾に追加
           newData.push(newRow);
         }
 
         return newData;
       });
 
+      alert('行を複製しました！');
     } catch (error: any) {
       console.error('複製失敗', error);
-      alert('複製に失敗しました: ' + error.message);
+      alert('複製に失敗しました: ' + (error.message || error));
     }
   };
 
