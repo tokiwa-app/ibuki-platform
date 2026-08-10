@@ -14,8 +14,7 @@ export async function GET(
 ) {
   try {
 
-    const name =
-      params.name;
+    const name = params.name;
 
     if (!name) {
       return Response.json(
@@ -71,11 +70,8 @@ export async function GET(
             idx:
               item.idx,
 
-            batch_no:
-              item.batch_no,
-
-            serial_no:
-              item.serial_no,
+            lot:
+              item.serial_and_batch_bundle,
 
             item_code:
               item.item_code,
@@ -101,11 +97,11 @@ export async function GET(
             conversion_factor:
               item.conversion_factor,
 
-            s_warehouse:
-              item.s_warehouse,
-
-            t_warehouse:
+            target_warehouse:
               item.t_warehouse,
+
+            source_warehouse:
+              item.s_warehouse,
 
             basic_rate:
               item.basic_rate,
