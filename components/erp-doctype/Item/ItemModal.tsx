@@ -1,310 +1,133 @@
 'use client';
 
 import {
-  useEffect,
-  useState,
-} from 'react';
+  Dialog,
+  DialogContent,
+} from '@mui/material';
 
-import {
-  AgGridReact,
-} from 'ag-grid-react';
+import { useState } from 'react';
 
-import {
-  ColDef,
-} from 'ag-grid-community';
-
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-quartz.css';
-
-interface Props {
-
-  itemId: string | null;
-
-}
+import ItemList from './ItemList';
+import ItemDetail from './ItemDetail';
 
 interface Item {
-
-  name?: string;
-
+  name: string;
   item_code?: string;
-
   item_name?: string;
-
-  item_group?: string;
-
-  stock_uom?: string;
-
-  custom_customer?: string;
-
-  maintain_stock?: number;
-
-  has_batch_no?: number;
-
-  has_expiry_date?: number;
-
-  company?: string;
-
-  default_warehouse?: string;
-
 }
 
-interface RowData {
-
-  category: string;
-
-  label: string;
-
-  value: string;
-
+interface Props {
+  open: boolean;
+  customer: string;
+  onClose: () => void;
+  onSelect: (item: Item) => void;
 }
 
-export default function ItemDetail({
-
-  itemId,
-
+export default function ItemModal({
+  open,
+  customer,
+  onClose,
+  onSelect,
 }: Props) {
 
-  const [item, setItem] =
+  const [selectedId, setSelectedId] =
+    useState<string | null>(null);
+
+  const [selectedItem, setSelectedItem] =
     useState<Item | null>(null);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState('');
-
-  useEffect(() => {
-
-    if (!itemId) {
-
-      setItem(null);
-
-      return;
-
-    }
-
-    async function loadItem() {
-
-      setLoading(true);
-
-      setError('');
-
-      try {
-
-        const res =
-          await fetch(
-            `/api/erpnext/item/${encodeURIComponent(
-              itemId,
-            )}`,
-            {
-              cache: 'no-store',
-            },
-          );
-
-        const data =
-          await res.json();
-
-        if (!res.ok) {
-
-          throw new Error(
-            data?.error ??
-            '商品取得失敗',
-          );
-
-        }
-
-        setItem(data);
-
-      } catch (e) {
-
-        setError(
-          e instanceof Error
-            ? e.message
-            : '商品取得失敗',
-        );
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    }
-
-    void loadItem();
-
-  }, [itemId]);
-
-  const rowData: RowData[] = [
-
-    {
-      category: '基本情報',
-      label: '商品コード',
-      value: item?.item_code ?? '',
-    },
-
-    {
-      category: '基本情報',
-      label: '商品名',
-      value: item?.item_name ?? '',
-    },
-
-    {
-      category: '基本情報',
-      label: '商品分類',
-      value: item?.item_group ?? '',
-    },
-
-    {
-      category: '基本情報',
-      label: '単位',
-      value: item?.stock_uom ?? '',
-    },
-
-    {
-      category: '基本情報',
-      label: '荷主',
-      value: item?.custom_customer ?? '',
-    },
-
-    {
-      category: '在庫設定',
-      label: '在庫管理',
-      value:
-        item?.maintain_stock
-          ? '有'
-          : '無',
-    },
-
-    {
-      category: '在庫設定',
-      label: 'ロット管理',
-      value:
-        item?.has_batch_no
-          ? '有'
-          : '無',
-    },
-
-    {
-      category: '在庫設定',
-      label: '期限管理',
-      value:
-        item?.has_expiry_date
-          ? '有'
-          : '無',
-    },
-
-    {
-      category: 'Item Default',
-      label: '会社',
-      value:
-        item?.company ?? '',
-    },
-
-    {
-      category: 'Item Default',
-      label: 'デフォルト倉庫',
-      value:
-        item?.default_warehouse ?? '',
-    },
-
-  ];
-
-  const columnDefs: ColDef<RowData>[] = [
-
-    {
-      field: 'category',
-      headerName: '区分',
-      width: 120,
-    },
-
-    {
-      field: 'label',
-      headerName: '項目',
-      width: 180,
-    },
-
-    {
-      field: 'value',
-      headerName: '値',
-      flex: 1,
-      editable: true,
-    },
-
-  ];
-
-  if (!itemId) {
-
-    return (
-
-      <div
-        style={{
-          padding: 16,
-        }}
-      >
-        商品を選択してください。
-      </div>
-
-    );
-
-  }
-
-  if (loading) {
-
-    return (
-
-      <div
-        style={{
-          padding: 16,
-        }}
-      >
-        読込中...
-      </div>
-
-    );
-
-  }
-
-  if (error) {
-
-    return (
-
-      <div
-        style={{
-          padding: 16,
-          color: '#c62828',
-        }}
-      >
-        {error}
-      </div>
-
-    );
-
-  }
 
   return (
 
-    <div
-      className="ag-theme-quartz"
-      style={{
-        width: '100%',
-        height: '100%',
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth={false}
+      PaperProps={{
+        sx: {
+          width: '95vw',
+          height: '90vh',
+          maxWidth: 'none',
+        },
       }}
     >
 
-      <AgGridReact<RowData>
-
-        rowData={rowData}
-
-        columnDefs={columnDefs}
-
-        defaultColDef={{
-          resizable: true,
+      <DialogContent
+        sx={{
+          p: 0,
+          display: 'flex',
+          overflow: 'hidden',
         }}
+      >
 
-      />
+        <div
+          style={{
+            width: 500,
+            borderRight: '1px solid #ddd',
+          }}
+        >
+          <ItemList
+            customer={customer}
+            selectedId={selectedId}
+            onSelect={(item) => {
+              setSelectedId(item.name);
+              setSelectedItem(item);
+            }}
+          />
+        </div>
 
-    </div>
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+
+          <div
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+            }}
+          >
+            <ItemDetail
+              itemId={selectedId}
+            />
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 8,
+              padding: 16,
+              borderTop: '1px solid #ddd',
+            }}
+          >
+
+            <button
+              onClick={() => {
+                if (selectedItem) {
+                  onSelect(selectedItem);
+                }
+              }}
+            >
+              選択
+            </button>
+
+            <button
+              onClick={onClose}
+            >
+              閉じる
+            </button>
+
+          </div>
+
+        </div>
+
+      </DialogContent>
+
+    </Dialog>
 
   );
 
