@@ -26,6 +26,10 @@ interface Props {
     >
   >;
 
+  onOpenItemModal: (
+    rowIndex: number,
+  ) => void;
+
 }
 
 export default function StockEntryGrid({
@@ -34,9 +38,37 @@ export default function StockEntryGrid({
 
   setItems,
 
+  onOpenItemModal,
+
 }: Props) {
 
   const columnDefs: ColDef<StockEntryItem>[] = [
+
+    {
+      headerName: '',
+      width: 50,
+      editable: false,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => (
+
+        <button
+          onClick={() =>
+            onOpenItemModal(
+              params.rowIndex,
+            )
+          }
+          style={{
+            width: 28,
+            height: 28,
+            cursor: 'pointer',
+          }}
+        >
+          ▶
+        </button>
+
+      ),
+    },
 
     {
       field: 'lot',
@@ -89,8 +121,7 @@ export default function StockEntryGrid({
       return;
     }
 
-    const next =
-      [...items];
+    const next = [...items];
 
     next[event.rowIndex!] =
       event.data;
