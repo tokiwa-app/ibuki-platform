@@ -1,10 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '../../../../lib/supabaseClient';
 
 interface StockEntryReceiptProps {
-  projectId: number;
+  stockEntryName: string | null;
 }
 
 interface StockEntryItem {
@@ -30,164 +29,306 @@ const emptyRow = (): StockEntryItem => ({
   qty: 0,
 });
 
-export default function StockEntryReceipt({ projectId }: StockEntryReceiptProps) {
-  const [stockEntryName, setStockEntryName] = useState<string | null>(null);
-  const [items, setItems] = useState<StockEntryItem[]>([emptyRow()]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+export default function StockEntryReceipt({
+  stockEntryName,
+}: StockEntryReceiptProps) {
 
-  // -----------------------------
-  // project_erp_linksからERP ID取得
-  // -----------------------------
+  const [items, setItems] =
+    useState<StockEntryItem[]>([
+      emptyRow(),
+    ]);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState('');
+
   useEffect(() => {
-    async function fetchLink() {
-      try {
-        const { data, error } = await supabase
-          .from('project_erp_links')
-          .select('erp_id')
-          .eq('project_id', projectId)
-          .eq('doctype', 'Stock Entry')
-          .eq('role', 'receipt')
-          .maybeSingle();
 
-        if (error) throw error;
-        setStockEntryName(data?.erp_id ?? null);
-      } catch (e) {
-        console.error('ERP Link取得失敗', e);
-        setStockEntryName(null);
-      }
-    }
-
-    void fetchLink();
-  }, [projectId]);
-
-  // -----------------------------
-  // Stock Entry取得
-  // -----------------------------
-  useEffect(() => {
     if (!stockEntryName) {
-      setItems([emptyRow()]);
+      setItems([
+        emptyRow(),
+      ]);
       return;
     }
 
     async function fetchStockEntry() {
+
       setLoading(true);
       setError('');
 
       try {
-        const response = await fetch(
-          `/api/erpnext/stock-entry/receipt/${encodeURIComponent(stockEntryName)}`,
-          { method: 'GET', cache: 'no-store' }
-        );
 
-        const result = await response.json() as StockEntryResponse;
+        const response =
+          await fetch(
+            `/api/erpnext/stock-entry/receipt/${encodeURIComponent(
+              stockEntryName,
+            )}`,
+            {
+              method: 'GET',
+              cache: 'no-store',
+            },
+          );
+
+        const result =
+          await response.json() as StockEntryResponse;
 
         if (!response.ok) {
-          throw new Error('Stock Entry取得失敗');
+          throw new Error(
+            'Stock Entry取得失敗',
+          );
         }
 
-        const rows = result.items?.map((item) => ({
-          targetWarehouse: item.target_warehouse ?? '',
-          itemCode: item.item_code ?? '',
-          qty: item.qty ?? 0,
-        })) ?? [];
+        const rows =
+          result.items?.map(
+            (item) => ({
+              targetWarehouse:
+                item.target_warehouse ?? '',
+              itemCode:
+                item.item_code ?? '',
+              qty:
+                item.qty ?? 0,
+            }),
+          ) ?? [];
 
-        setItems([...rows, emptyRow()]);
+        setItems([
+          ...rows,
+          emptyRow(),
+        ]);
+
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Stock Entry取得失敗');
-        setItems([emptyRow()]);
+
+        setError(
+          e instanceof Error
+            ? e.message
+            : 'Stock Entry取得失敗',
+        );
+
+        setItems([
+          emptyRow(),
+        ]);
+
       } finally {
+
         setLoading(false);
+
       }
+
     }
 
     void fetchStockEntry();
+
   }, [stockEntryName]);
 
-  function updateRow(index: number, key: keyof StockEntryItem, value: string | number) {
-    const next = [...items];
-    next[index] = { ...next[index], [key]: value };
+  function updateRow(
+    index: number,
+    key: keyof StockEntryItem,
+    value: string | number,
+  ) {
 
-    const last = next[next.length - 1];
-    if (last.targetWarehouse || last.itemCode || last.qty > 0) {
-      next.push(emptyRow());
+    const next =
+      [...items];
+
+    next[index] = {
+      ...next[index],
+      [key]: value,
+    };
+
+    const last =
+      next[next.length - 1];
+
+    if (
+      last.targetWarehouse ||
+      last.itemCode ||
+      last.qty > 0
+    ) {
+      next.push(
+        emptyRow(),
+      );
     }
 
     setItems(next);
+
   }
 
-  function deleteRow(index: number) {
-    const next = items.filter((_, i) => i !== index);
+  function deleteRow(
+    index: number,
+  ) {
 
-    const last = next[next.length - 1];
-    if (next.length === 0 || last?.targetWarehouse || last?.itemCode || (last?.qty ?? 0) > 0) {
-      next.push(emptyRow());
+    const next =
+      items.filter(
+        (_, i) => i !== index,
+      );
+
+    const last =
+      next[next.length - 1];
+
+    if (
+      next.length === 0 ||
+      last?.targetWarehouse ||
+      last?.itemCode ||
+      (last?.qty ?? 0) > 0
+    ) {
+      next.push(
+        emptyRow(),
+      );
     }
 
     setItems(next);
+
   }
 
   if (loading) {
-    return <div style={{ padding: 12 }}>入庫情報読込中...</div>;
+    return (
+      <div style={{ padding: 12 }}>
+        入庫情報読込中...
+      </div>
+    );
   }
 
   if (error) {
-    return <div style={{ padding: 12, color: '#c62828' }}>{error}</div>;
+    return (
+      <div
+        style={{
+          padding: 12,
+          color: '#c62828',
+        }}
+      >
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div style={{ padding: 12 }}>
-      <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>在庫入庫</h3>
+    <div
+      style={{
+        padding: 12,
+      }}
+    >
+      <h3
+        style={{
+          margin: '0 0 12px',
+          fontSize: 15,
+        }}
+      >
+        在庫入庫
+      </h3>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          fontSize: 13,
+        }}
+      >
         <thead>
           <tr>
-            <th style={th}>Target Warehouse</th>
-            <th style={th}>Item Code</th>
-            <th style={th}>Qty</th>
-            <th style={th}>操作</th>
+            <th style={th}>
+              Target Warehouse
+            </th>
+            <th style={th}>
+              Item Code
+            </th>
+            <th style={th}>
+              Qty
+            </th>
+            <th style={th}>
+              操作
+            </th>
           </tr>
         </thead>
-        <tbody>
-          {items.map((item, index) => {
-            const hasValue = item.targetWarehouse || item.itemCode || item.qty > 0;
 
-            return (
-              <tr key={index}>
-                <td style={td}>
-                  <input
-                    value={item.targetWarehouse}
-                    onChange={(e) => updateRow(index, 'targetWarehouse', e.target.value)}
-                    style={input}
-                  />
-                </td>
-                <td style={td}>
-                  <input
-                    value={item.itemCode}
-                    onChange={(e) => updateRow(index, 'itemCode', e.target.value)}
-                    style={input}
-                  />
-                </td>
-                <td style={td}>
-                  <input
-                    type="number"
-                    value={item.qty}
-                    onChange={(e) => updateRow(index, 'qty', Number(e.target.value))}
-                    style={{ ...input, width: 80 }}
-                  />
-                </td>
-                <td style={td}>
-                  {hasValue && (
-                    <button onClick={() => deleteRow(index)}>×</button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
+        <tbody>
+
+          {items.map(
+            (item, index) => {
+
+              const hasValue =
+                item.targetWarehouse ||
+                item.itemCode ||
+                item.qty > 0;
+
+              return (
+                <tr
+                  key={index}
+                >
+                  <td style={td}>
+                    <input
+                      value={
+                        item.targetWarehouse
+                      }
+                      onChange={(e) =>
+                        updateRow(
+                          index,
+                          'targetWarehouse',
+                          e.target.value,
+                        )
+                      }
+                      style={input}
+                    />
+                  </td>
+
+                  <td style={td}>
+                    <input
+                      value={
+                        item.itemCode
+                      }
+                      onChange={(e) =>
+                        updateRow(
+                          index,
+                          'itemCode',
+                          e.target.value,
+                        )
+                      }
+                      style={input}
+                    />
+                  </td>
+
+                  <td style={td}>
+                    <input
+                      type="number"
+                      value={item.qty}
+                      onChange={(e) =>
+                        updateRow(
+                          index,
+                          'qty',
+                          Number(
+                            e.target.value,
+                          ),
+                        )
+                      }
+                      style={{
+                        ...input,
+                        width: 80,
+                      }}
+                    />
+                  </td>
+
+                  <td style={td}>
+                    {hasValue && (
+                      <button
+                        onClick={() =>
+                          deleteRow(index)
+                        }
+                      >
+                        ×
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+
+            },
+          )}
+
         </tbody>
+
       </table>
+
     </div>
   );
+
 }
 
 const th = {
