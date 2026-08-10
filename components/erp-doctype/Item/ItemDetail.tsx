@@ -16,15 +16,11 @@ import {
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-quartz.css';
 
-
-
 interface Props {
 
   itemId: string | null;
 
 }
-
-
 
 interface Item {
 
@@ -40,13 +36,11 @@ interface Item {
 
   custom_customer?: string;
 
-
   maintain_stock?: number;
 
   has_batch_no?: number;
 
   has_expiry_date?: number;
-
 
   company?: string;
 
@@ -54,19 +48,15 @@ interface Item {
 
 }
 
-
-
 interface RowData {
 
-  category:string;
+  category: string;
 
-  label:string;
+  label: string;
 
-  value:string;
+  value: string;
 
 }
-
-
 
 export default function ItemDetail({
 
@@ -74,62 +64,47 @@ export default function ItemDetail({
 
 }: Props) {
 
-
-  const [item,setItem] =
+  const [item, setItem] =
     useState<Item | null>(null);
 
-
-  const [loading,setLoading] =
+  const [loading, setLoading] =
     useState(false);
 
-
-  const [error,setError] =
+  const [error, setError] =
     useState('');
 
+  useEffect(() => {
 
+    if (!itemId) {
 
+      setItem(null);
 
-  useEffect(()=>{
+      return;
 
+    }
 
-    async function loadItem(){
-
-
-      if(!itemId){
-
-        setItem(null);
-
-        return;
-
-      }
-
-
+    async function loadItem() {
 
       setLoading(true);
 
       setError('');
 
-
-
-      try{
-
+      try {
 
         const res =
           await fetch(
-            `/api/erpnext/item/${encodeURIComponent(itemId)}`,
+            `/api/erpnext/item/${encodeURIComponent(
+              itemId,
+            )}`,
             {
-              cache:'no-store',
+              cache: 'no-store',
             },
           );
-
-
 
         const data =
           await res.json();
 
-
-
-        if(!res.ok){
+        if (!res.ok) {
 
           throw new Error(
             data?.error ??
@@ -138,14 +113,9 @@ export default function ItemDetail({
 
         }
 
-
-
         setItem(data);
 
-
-
-      }catch(e){
-
+      } catch (e) {
 
         setError(
           e instanceof Error
@@ -153,152 +123,125 @@ export default function ItemDetail({
             : '商品取得失敗',
         );
 
-
-      }finally{
-
+      } finally {
 
         setLoading(false);
 
-
       }
-
 
     }
 
-
-
     void loadItem();
 
+  }, [itemId]);
 
-
-  },[itemId]);
-
-
-
-
-
-
-  const rowData:RowData[] = [
-
+  const rowData: RowData[] = [
 
     {
-      category:'基本情報',
-      label:'商品コード',
-      value:item?.item_code ?? '-',
+      category: '基本情報',
+      label: '商品コード',
+      value: item?.item_code ?? '',
     },
 
     {
-      category:'基本情報',
-      label:'商品名',
-      value:item?.item_name ?? '-',
+      category: '基本情報',
+      label: '商品名',
+      value: item?.item_name ?? '',
     },
-
 
     {
-      category:'基本情報',
-      label:'商品分類',
-      value:item?.item_group ?? '-',
+      category: '基本情報',
+      label: '商品分類',
+      value: item?.item_group ?? '',
     },
-
 
     {
-      category:'基本情報',
-      label:'単位',
-      value:item?.stock_uom ?? '-',
+      category: '基本情報',
+      label: '単位',
+      value: item?.stock_uom ?? '',
     },
-
 
     {
-      category:'基本情報',
-      label:'荷主',
-      value:item?.custom_customer ?? '-',
+      category: '基本情報',
+      label: '荷主',
+      value: item?.custom_customer ?? '',
     },
-
 
     {
-      category:'在庫設定',
-      label:'在庫管理',
-      value:item?.maintain_stock ? '有':'無',
+      category: '在庫設定',
+      label: '在庫管理',
+      value:
+        item?.maintain_stock
+          ? '有'
+          : '無',
     },
-
 
     {
-      category:'在庫設定',
-      label:'ロット管理',
-      value:item?.has_batch_no ? '有':'無',
+      category: '在庫設定',
+      label: 'ロット管理',
+      value:
+        item?.has_batch_no
+          ? '有'
+          : '無',
     },
-
 
     {
-      category:'在庫設定',
-      label:'期限管理',
-      value:item?.has_expiry_date ? '有':'無',
+      category: '在庫設定',
+      label: '期限管理',
+      value:
+        item?.has_expiry_date
+          ? '有'
+          : '無',
     },
-
 
     {
-      category:'Item Default',
-      label:'会社',
-      value:item?.company ?? '-',
+      category: 'Item Default',
+      label: '会社',
+      value:
+        item?.company ?? '',
     },
-
 
     {
-      category:'Item Default',
-      label:'デフォルト倉庫',
-      value:item?.default_warehouse ?? '-',
+      category: 'Item Default',
+      label: 'デフォルト倉庫',
+      value:
+        item?.default_warehouse ?? '',
     },
-
-
-    {
-      category:'システム',
-      label:'Item ID',
-      value:item?.name ?? '-',
-    },
-
 
   ];
 
-
-
-
-
-  const columnDefs:ColDef<RowData>[]=[
-
+  const columnDefs: ColDef<RowData>[] = [
 
     {
-      field:'category',
-      headerName:'区分',
-      width:120,
+      field: 'category',
+      headerName: '区分',
+      width: 120,
     },
-
 
     {
-      field:'label',
-      headerName:'項目',
-      width:180,
+      field: 'label',
+      headerName: '項目',
+      width: 180,
     },
-
 
     {
-      field:'value',
-      headerName:'値',
-      flex:1,
+      field: 'value',
+      headerName: '値',
+      flex: 1,
+      editable: true,
     },
-
 
   ];
 
-
-
-
-
-
-  if(!itemId){
+  if (!itemId) {
 
     return (
 
-      <div style={boxStyle}>
+      <div
+        style={{
+          padding: 16,
+        }}
+      >
         商品を選択してください。
       </div>
 
@@ -306,34 +249,30 @@ export default function ItemDetail({
 
   }
 
-
-
-
-
-  if(loading){
+  if (loading) {
 
     return (
 
-      <div style={boxStyle}>
-        Loading...
+      <div
+        style={{
+          padding: 16,
+        }}
+      >
+        読込中...
       </div>
 
     );
 
   }
 
-
-
-
-
-  if(error){
+  if (error) {
 
     return (
 
       <div
         style={{
-          ...boxStyle,
-          color:'#c62828',
+          padding: 16,
+          color: '#c62828',
         }}
       >
         {error}
@@ -343,21 +282,15 @@ export default function ItemDetail({
 
   }
 
-
-
-
-
   return (
 
     <div
       className="ag-theme-quartz"
-
       style={{
-        height:'100%',
-        width:'100%',
+        width: '100%',
+        height: '100%',
       }}
     >
-
 
       <AgGridReact<RowData>
 
@@ -365,34 +298,14 @@ export default function ItemDetail({
 
         columnDefs={columnDefs}
 
-
         defaultColDef={{
-          resizable:true,
+          resizable: true,
         }}
 
-
-        domLayout="normal"
-
-
       />
-
 
     </div>
 
   );
 
 }
-
-
-
-
-
-const boxStyle={
-
-  padding:16,
-
-  background:'#fff',
-
-  height:'100%',
-
-};
