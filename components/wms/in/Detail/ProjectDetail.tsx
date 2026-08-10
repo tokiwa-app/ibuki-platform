@@ -10,18 +10,20 @@ import StockEntryReceipt from '../../../erp-doctype/StockEntry/Receipt/StockEntr
 
 import { supabase } from '../../../../lib/supabaseClient';
 
-
 interface ProjectDetailProps {
   projectId: number | null;
 }
 
-
 interface Project {
   id: number;
   project_name: string;
-  erp_stock_entry_receipt_id: string | null;
 }
 
+interface ProjectErpLink {
+  doctype: string;
+  role: string;
+  erp_id: string;
+}
 
 export default function ProjectDetail({
   projectId,
@@ -30,50 +32,71 @@ export default function ProjectDetail({
   const [project, setProject] =
     useState<Project | null>(null);
 
+  const [stockEntryReceiptId, setStockEntryReceiptId] =
+    useState<string | null>(null);
 
   const [loading, setLoading] =
     useState(false);
-
 
   useEffect(() => {
 
     if (projectId == null) {
       setProject(null);
+      setStockEntryReceiptId(null);
       return;
     }
-
 
     async function fetchProject() {
 
       setLoading(true);
 
-
       try {
 
-        const {
-          data,
-          error,
-        } = await supabase
-          .from('projects')
-          .select(`
-            id,
-            project_name,
-            erp_stock_entry_receipt_id
-          `)
-          .eq(
-            'id',
-            projectId,
-          )
-          .single();
+        const [
+          projectResult,
+          linkResult,
+        ] = await Promise.all([
 
+          supabase
+            .from('projects')
+            .select(`
+              id,
+              project_name
+            `)
+            .eq('id', projectId)
+            .single(),
 
-        if (error) {
-          throw error;
+          supabase
+            .from('project_erp_links')
+            .select(`
+              doctype,
+              role,
+              erp_id
+            `)
+            .eq('project_id', projectId),
+
+        ]);
+
+        if (projectResult.error) {
+          throw projectResult.error;
         }
 
+        if (linkResult.error) {
+          throw linkResult.error;
+        }
 
-        setProject(data);
+        setProject(projectResult.data);
 
+        const receiptLink =
+          (linkResult.data as ProjectErpLink[]).find(
+            (link) =>
+              link.doctype === 'Stock Entry' &&
+              link.role === 'receipt',
+          );
+
+        setStockEntryReceiptId(
+          receiptLink?.erp_id ?? null,
+        );
 
       } catch (e) {
 
@@ -83,7 +106,7 @@ export default function ProjectDetail({
         );
 
         setProject(null);
-
+        setStockEntryReceiptId(null);
 
       } finally {
 
@@ -93,13 +116,9 @@ export default function ProjectDetail({
 
     }
 
-
     void fetchProject();
 
-
   }, [projectId]);
-
-
 
   if (projectId == null) {
     return (
@@ -109,8 +128,6 @@ export default function ProjectDetail({
     );
   }
 
-
-
   if (loading) {
     return (
       <div style={{ padding: 16 }}>
@@ -119,8 +136,6 @@ export default function ProjectDetail({
     );
   }
 
-
-
   if (!project) {
     return (
       <div style={{ padding: 16 }}>
@@ -128,8 +143,6 @@ export default function ProjectDetail({
       </div>
     );
   }
-
-
 
   return (
     <div
@@ -142,16 +155,13 @@ export default function ProjectDetail({
         boxSizing: 'border-box',
       }}
     >
-
       <div
         style={{
           padding: 16,
-          borderBottom:
-            '1px solid #ddd',
+          borderBottom: '1px solid #ddd',
           flexShrink: 0,
         }}
       >
-
         <h2
           style={{
             margin: 0,
@@ -161,11 +171,7 @@ export default function ProjectDetail({
         >
           {project.project_name}
         </h2>
-
-
       </div>
-
-
 
       <div
         style={{
@@ -175,7 +181,6 @@ export default function ProjectDetail({
           boxSizing: 'border-box',
         }}
       >
-
         <div
           style={{
             marginBottom: 24,
@@ -186,27 +191,17 @@ export default function ProjectDetail({
           />
         </div>
 
-
-
         <div
           style={{
-            borderTop:
-              '1px solid #ddd',
+            borderTop: '1px solid #ddd',
             paddingTop: 16,
           }}
         >
-
           <StockEntryReceipt
-            stockEntryName={
-              project.erp_stock_entry_receipt_id
-            }
+            stockEntryName={stockEntryReceiptId}
           />
-
         </div>
-
-
       </div>
-
     </div>
   );
 }
