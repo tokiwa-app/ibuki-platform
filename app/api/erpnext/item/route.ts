@@ -1,14 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import {
   erpnextRequest,
 } from '../../../../lib/erpnextClient';
 
-
-
-export async function GET() {
+export async function GET(
+  request: NextRequest,
+) {
 
   try {
+
+    const customer =
+      request.nextUrl.searchParams.get(
+        'customer',
+      );
+
+    const filters = customer
+      ? [
+          [
+            'Item',
+            'custom_customer',
+            '=',
+            customer,
+          ],
+        ]
+      : [];
 
     const items =
       await erpnextRequest(
@@ -20,18 +36,17 @@ export async function GET() {
             'item_group',
             'stock_uom',
             'custom_customer',
-          ])
-        )}&limit_page_length=1000`
+          ]),
+        )}&filters=${encodeURIComponent(
+          JSON.stringify(filters),
+        )}&limit_page_length=1000`,
       );
-
 
     return NextResponse.json(
       items.data ?? [],
     );
 
-
   } catch (error) {
-
 
     return NextResponse.json(
       {
