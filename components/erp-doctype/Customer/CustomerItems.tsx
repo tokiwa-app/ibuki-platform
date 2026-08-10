@@ -4,7 +4,7 @@ import {
   useState,
 } from 'react';
 
-import ItemModal from '../../../erp-doctype/Item/ItemModal';
+import ItemModal from '../Item/ItemModal';
 
 interface Props {
   customerCode: string | null;
