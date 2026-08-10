@@ -55,29 +55,26 @@ export default function ItemModal({
 
   return (
 
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.35)',
-        zIndex: 9999,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
+<div
+  style={{
+    position: 'fixed',
+    inset: 0,
+    background: '#fff',
+    zIndex: 9999,
+    display: 'flex',
+    flexDirection: 'column',
+  }}
+>
 
-      <div
-        style={{
-          width: '95vw',
-          height: '92vh',
-          background: '#fff',
-          borderRadius: 8,
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+<div
+  style={{
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+  }}
+>
 
         <div
           style={{
