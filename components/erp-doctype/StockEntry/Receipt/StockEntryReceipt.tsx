@@ -14,7 +14,7 @@ import StockEntryHeader from './StockEntryHeader';
 import StockEntryGrid from './StockEntryGrid';
 import StockEntryFooter from './StockEntryFooter';
 
-import ItemModal from '../../../Item/ItemModal';
+import ItemModal from '../../Item/ItemModal';
 
 interface ProjectContext {
 
