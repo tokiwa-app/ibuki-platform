@@ -18,7 +18,7 @@ export interface StockEntryItem {
 
   idx?: number;
 
-  batch_no: string;
+  lot: string;
 
   item_code: string;
 
