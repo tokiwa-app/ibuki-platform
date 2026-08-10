@@ -13,7 +13,9 @@ export async function GET(
   { params }: RouteParams,
 ) {
   try {
-    const name = params.name;
+
+    const name =
+      params.name;
 
     if (!name) {
       return Response.json(
@@ -26,7 +28,6 @@ export async function GET(
       );
     }
 
-
     const result =
       await erpnextRequest(
         `/api/resource/Stock Entry/${encodeURIComponent(
@@ -37,35 +38,85 @@ export async function GET(
         },
       );
 
-
     const data =
       result?.data;
 
-
     return Response.json({
-      name: data?.name,
-      stock_entry_type:
-        data?.stock_entry_type,
-      posting_date:
-        data?.posting_date,
+
+      name:
+        data?.name,
+
+      docstatus:
+        data?.docstatus,
+
       status:
         data?.status,
+
+      posting_date:
+        data?.posting_date,
+
+      stock_entry_type:
+        data?.stock_entry_type,
+
+      purpose:
+        data?.purpose,
 
       items:
         data?.items?.map(
           (item: any) => ({
-            target_warehouse:
-              item.t_warehouse,
+
+            name:
+              item.name,
+
+            idx:
+              item.idx,
+
+            batch_no:
+              item.batch_no,
+
+            serial_no:
+              item.serial_no,
 
             item_code:
               item.item_code,
 
+            item_name:
+              item.item_name,
+
+            description:
+              item.description,
+
             qty:
               item.qty,
+
+            transfer_qty:
+              item.transfer_qty,
+
+            uom:
+              item.uom,
+
+            stock_uom:
+              item.stock_uom,
+
+            conversion_factor:
+              item.conversion_factor,
+
+            s_warehouse:
+              item.s_warehouse,
+
+            t_warehouse:
+              item.t_warehouse,
+
+            basic_rate:
+              item.basic_rate,
+
+            valuation_rate:
+              item.valuation_rate,
+
           }),
         ) ?? [],
-    });
 
+    });
 
   } catch (error: unknown) {
 
@@ -73,7 +124,6 @@ export async function GET(
       'Stock Entry Receipt取得エラー',
       error,
     );
-
 
     return Response.json(
       {
@@ -86,5 +136,6 @@ export async function GET(
         status: 500,
       },
     );
+
   }
 }
