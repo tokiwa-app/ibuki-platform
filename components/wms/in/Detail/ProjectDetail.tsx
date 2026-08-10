@@ -14,17 +14,32 @@ interface ProjectDetailProps {
   projectId: number | null;
 }
 
-interface Project {
-  id: number;
-  project_name: string;
+interface ProjectErpLink {
+  doctype: string;
+  role: string;
+  erp_id: string;
+}
+
+function getErpId(
+  links: ProjectErpLink[],
+  doctype: string,
+  role: string,
+) {
+  return (
+    links.find(
+      (x) =>
+        x.doctype === doctype &&
+        x.role === role,
+    )?.erp_id ?? null
+  );
 }
 
 export default function ProjectDetail({
   projectId,
 }: ProjectDetailProps) {
 
-  const [project, setProject] =
-    useState<Project | null>(null);
+  const [erpLinks, setErpLinks] =
+    useState<ProjectErpLink[]>([]);
 
   const [loading, setLoading] =
     useState(false);
@@ -32,11 +47,11 @@ export default function ProjectDetail({
   useEffect(() => {
 
     if (projectId == null) {
-      setProject(null);
+      setErpLinks([]);
       return;
     }
 
-    async function fetchProject() {
+    async function fetchLinks() {
 
       setLoading(true);
 
@@ -46,28 +61,33 @@ export default function ProjectDetail({
           data,
           error,
         } = await supabase
-          .from('projects')
+          .from('project_erp_links')
           .select(`
-            id,
-            project_name
+            doctype,
+            role,
+            erp_id
           `)
-          .eq('id', projectId)
-          .single();
+          .eq(
+            'project_id',
+            projectId,
+          );
 
         if (error) {
           throw error;
         }
 
-        setProject(data);
+        setErpLinks(
+          data ?? [],
+        );
 
       } catch (e) {
 
         console.error(
-          'Project取得失敗',
+          'ERP Link取得失敗',
           e,
         );
 
-        setProject(null);
+        setErpLinks([]);
 
       } finally {
 
@@ -77,7 +97,7 @@ export default function ProjectDetail({
 
     }
 
-    void fetchProject();
+    void fetchLinks();
 
   }, [projectId]);
 
@@ -97,13 +117,19 @@ export default function ProjectDetail({
     );
   }
 
-  if (!project) {
-    return (
-      <div style={{ padding: 16 }}>
-        プロジェクトがありません。
-      </div>
+  const purchaseReceiptName =
+    getErpId(
+      erpLinks,
+      'Purchase Receipt',
+      'main',
     );
-  }
+
+  const stockEntryReceiptName =
+    getErpId(
+      erpLinks,
+      'Stock Entry',
+      'receipt',
+    );
 
   return (
     <div
@@ -118,24 +144,6 @@ export default function ProjectDetail({
     >
       <div
         style={{
-          padding: 16,
-          borderBottom: '1px solid #ddd',
-          flexShrink: 0,
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            marginBottom: 8,
-            fontSize: 18,
-          }}
-        >
-          {project.project_name}
-        </h2>
-      </div>
-
-      <div
-        style={{
           flex: 1,
           overflowY: 'auto',
           padding: 16,
@@ -148,20 +156,26 @@ export default function ProjectDetail({
           }}
         >
           <PurchaseReceiptDetail
-            projectId={projectId}
+            purchaseReceiptName={
+              purchaseReceiptName
+            }
           />
         </div>
 
         <div
           style={{
-            borderTop: '1px solid #ddd',
+            borderTop:
+              '1px solid #ddd',
             paddingTop: 16,
           }}
         >
           <StockEntryReceipt
-            projectId={projectId}
+            stockEntryName={
+              stockEntryReceiptName
+            }
           />
         </div>
+
       </div>
     </div>
   );
