@@ -10,6 +10,13 @@ import StockEntryReceipt from '../../../erp-doctype/StockEntry/Receipt/StockEntr
 
 import { supabase } from '../../../../lib/supabaseClient';
 
+interface ProjectContext {
+  projectId: number;
+  customer: string | null;
+  company: string | null;
+  expected_start_date: string | null;
+}
+
 interface ProjectDetailProps {
   projectId: number | null;
 }
@@ -38,6 +45,9 @@ export default function ProjectDetail({
   projectId,
 }: ProjectDetailProps) {
 
+  const [project, setProject] =
+    useState<ProjectContext | null>(null);
+
   const [erpLinks, setErpLinks] =
     useState<ProjectErpLink[]>([]);
 
@@ -47,46 +57,88 @@ export default function ProjectDetail({
   useEffect(() => {
 
     if (projectId == null) {
+
+      setProject(null);
       setErpLinks([]);
+
       return;
+
     }
 
-    async function fetchLinks() {
+    async function fetchData() {
 
       setLoading(true);
 
       try {
 
-        const {
-          data,
-          error,
-        } = await supabase
-          .from('project_erp_links')
-          .select(`
-            doctype,
-            role,
-            erp_id
-          `)
-          .eq(
-            'project_id',
-            projectId,
-          );
+        const [
+          projectResult,
+          linkResult,
+        ] = await Promise.all([
 
-        if (error) {
-          throw error;
+          supabase
+            .from('projects')
+            .select(`
+              id,
+              customer,
+              company,
+              expected_start_date
+            `)
+            .eq(
+              'id',
+              projectId,
+            )
+            .single(),
+
+          supabase
+            .from('project_erp_links')
+            .select(`
+              doctype,
+              role,
+              erp_id
+            `)
+            .eq(
+              'project_id',
+              projectId,
+            ),
+
+        ]);
+
+        if (
+          projectResult.error
+        ) {
+          throw projectResult.error;
         }
 
+        if (
+          linkResult.error
+        ) {
+          throw linkResult.error;
+        }
+
+        setProject({
+          projectId:
+            projectResult.data.id,
+          customer:
+            projectResult.data.customer,
+          company:
+            projectResult.data.company,
+          expected_start_date:
+            projectResult.data.expected_start_date,
+        });
+
         setErpLinks(
-          data ?? [],
+          linkResult.data ?? [],
         );
 
       } catch (e) {
 
         console.error(
-          'ERP Link取得失敗',
+          'Project取得失敗',
           e,
         );
 
+        setProject(null);
         setErpLinks([]);
 
       } finally {
@@ -97,7 +149,7 @@ export default function ProjectDetail({
 
     }
 
-    void fetchLinks();
+    void fetchData();
 
   }, [projectId]);
 
@@ -159,6 +211,7 @@ export default function ProjectDetail({
             purchaseReceiptName={
               purchaseReceiptName
             }
+            project={project}
           />
         </div>
 
@@ -173,6 +226,7 @@ export default function ProjectDetail({
             stockEntryName={
               stockEntryReceiptName
             }
+            project={project}
           />
         </div>
 
