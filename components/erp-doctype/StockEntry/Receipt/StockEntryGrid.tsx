@@ -39,8 +39,8 @@ export default function StockEntryGrid({
   const columnDefs: ColDef<StockEntryItem>[] = [
 
     {
-      field: 'batch_no',
-      headerName: 'Batch No',
+      field: 'lot',
+      headerName: 'ロット',
       width: 180,
       editable: true,
     },
