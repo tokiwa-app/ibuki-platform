@@ -1,42 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import {
+  useEffect,
+  useState,
+} from 'react';
 
-interface StockEntryReceiptProps {
+import {
+  StockEntry,
+  StockEntryItem,
+} from './types';
+
+import StockEntryHeader from './StockEntryHeader';
+import StockEntryGrid from './StockEntryGrid';
+import StockEntryFooter from './StockEntryFooter';
+
+interface Props {
   stockEntryName: string | null;
 }
 
-interface StockEntryItem {
-  targetWarehouse: string;
-  itemCode: string;
-  qty: number;
-}
-
-interface StockEntryResponse {
-  name?: string;
-  stock_entry_type?: string;
-  posting_date?: string;
-  items?: {
-    target_warehouse?: string;
-    item_code?: string;
-    qty?: number;
-  }[];
-}
-
-const emptyRow = (): StockEntryItem => ({
-  targetWarehouse: '',
-  itemCode: '',
-  qty: 0,
-});
-
 export default function StockEntryReceipt({
   stockEntryName,
-}: StockEntryReceiptProps) {
+}: Props) {
+
+  const [doc, setDoc] =
+    useState<StockEntry | null>(null);
 
   const [items, setItems] =
-    useState<StockEntryItem[]>([
-      emptyRow(),
-    ]);
+    useState<StockEntryItem[]>([]);
 
   const [loading, setLoading] =
     useState(false);
@@ -47,15 +37,19 @@ export default function StockEntryReceipt({
   useEffect(() => {
 
     if (!stockEntryName) {
-      setItems([
-        emptyRow(),
-      ]);
+
+      setDoc(null);
+
+      setItems([]);
+
       return;
+
     }
 
-    async function fetchStockEntry() {
+    async function fetchDoc() {
 
       setLoading(true);
+
       setError('');
 
       try {
@@ -66,48 +60,34 @@ export default function StockEntryReceipt({
               stockEntryName,
             )}`,
             {
-              method: 'GET',
               cache: 'no-store',
             },
           );
 
-        const result =
-          await response.json() as StockEntryResponse;
-
         if (!response.ok) {
+
           throw new Error(
             'Stock Entry取得失敗',
           );
+
         }
 
-        const rows =
-          result.items?.map(
-            (item) => ({
-              targetWarehouse:
-                item.target_warehouse ?? '',
-              itemCode:
-                item.item_code ?? '',
-              qty:
-                item.qty ?? 0,
-            }),
-          ) ?? [];
+        const result =
+          await response.json();
 
-        setItems([
-          ...rows,
-          emptyRow(),
-        ]);
+        setDoc(result);
+
+        setItems(
+          result.items ?? [],
+        );
 
       } catch (e) {
 
         setError(
           e instanceof Error
             ? e.message
-            : 'Stock Entry取得失敗',
+            : '読込失敗',
         );
-
-        setItems([
-          emptyRow(),
-        ]);
 
       } finally {
 
@@ -117,233 +97,90 @@ export default function StockEntryReceipt({
 
     }
 
-    void fetchStockEntry();
+    void fetchDoc();
 
   }, [stockEntryName]);
 
-  function updateRow(
-    index: number,
-    key: keyof StockEntryItem,
-    value: string | number,
-  ) {
+  async function handleSave() {
 
-    const next =
-      [...items];
-
-    next[index] = {
-      ...next[index],
-      [key]: value,
-    };
-
-    const last =
-      next[next.length - 1];
-
-    if (
-      last.targetWarehouse ||
-      last.itemCode ||
-      last.qty > 0
-    ) {
-      next.push(
-        emptyRow(),
-      );
-    }
-
-    setItems(next);
+    console.log(
+      '保存',
+      items,
+    );
 
   }
 
-  function deleteRow(
-    index: number,
-  ) {
+  async function handleSubmit() {
 
-    const next =
-      items.filter(
-        (_, i) => i !== index,
-      );
-
-    const last =
-      next[next.length - 1];
-
-    if (
-      next.length === 0 ||
-      last?.targetWarehouse ||
-      last?.itemCode ||
-      (last?.qty ?? 0) > 0
-    ) {
-      next.push(
-        emptyRow(),
-      );
-    }
-
-    setItems(next);
+    console.log(
+      'Submit',
+    );
 
   }
 
   if (loading) {
-    return (
-      <div style={{ padding: 12 }}>
-        入庫情報読込中...
-      </div>
-    );
-  }
 
-  if (error) {
     return (
       <div
         style={{
-          padding: 12,
-          color: '#c62828',
+          padding: 16,
+        }}
+      >
+        読込中...
+      </div>
+    );
+
+  }
+
+  if (error) {
+
+    return (
+      <div
+        style={{
+          padding: 16,
+          color: 'red',
         }}
       >
         {error}
       </div>
     );
+
   }
 
   return (
+
     <div
       style={{
-        padding: 12,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
       }}
     >
-      <h3
-        style={{
-          margin: '0 0 12px',
-          fontSize: 15,
-        }}
-      >
-        在庫入庫
-      </h3>
 
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: 13,
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={th}>
-              Target Warehouse
-            </th>
-            <th style={th}>
-              Item Code
-            </th>
-            <th style={th}>
-              Qty
-            </th>
-            <th style={th}>
-              操作
-            </th>
-          </tr>
-        </thead>
+      <StockEntryHeader
+        doc={doc}
+      />
 
-        <tbody>
+      <StockEntryGrid
+        items={items}
+        setItems={setItems}
+      />
 
-          {items.map(
-            (item, index) => {
-
-              const hasValue =
-                item.targetWarehouse ||
-                item.itemCode ||
-                item.qty > 0;
-
-              return (
-                <tr
-                  key={index}
-                >
-                  <td style={td}>
-                    <input
-                      value={
-                        item.targetWarehouse
-                      }
-                      onChange={(e) =>
-                        updateRow(
-                          index,
-                          'targetWarehouse',
-                          e.target.value,
-                        )
-                      }
-                      style={input}
-                    />
-                  </td>
-
-                  <td style={td}>
-                    <input
-                      value={
-                        item.itemCode
-                      }
-                      onChange={(e) =>
-                        updateRow(
-                          index,
-                          'itemCode',
-                          e.target.value,
-                        )
-                      }
-                      style={input}
-                    />
-                  </td>
-
-                  <td style={td}>
-                    <input
-                      type="number"
-                      value={item.qty}
-                      onChange={(e) =>
-                        updateRow(
-                          index,
-                          'qty',
-                          Number(
-                            e.target.value,
-                          ),
-                        )
-                      }
-                      style={{
-                        ...input,
-                        width: 80,
-                      }}
-                    />
-                  </td>
-
-                  <td style={td}>
-                    {hasValue && (
-                      <button
-                        onClick={() =>
-                          deleteRow(index)
-                        }
-                      >
-                        ×
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-
-            },
-          )}
-
-        </tbody>
-
-      </table>
+      <StockEntryFooter
+        loading={loading}
+        isSubmitted={
+          doc?.docstatus === 1
+        }
+        onSave={
+          handleSave
+        }
+        onSubmit={
+          handleSubmit
+        }
+      />
 
     </div>
+
   );
 
 }
-
-const th = {
-  borderBottom: '1px solid #ddd',
-  padding: 6,
-  textAlign: 'left' as const,
-};
-
-const td = {
-  borderBottom: '1px solid #eee',
-  padding: 4,
-};
-
-const input = {
-  width: '100%',
-  padding: '4px 6px',
-  boxSizing: 'border-box' as const,
-};
