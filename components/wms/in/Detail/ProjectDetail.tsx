@@ -19,21 +19,12 @@ interface Project {
   project_name: string;
 }
 
-interface ProjectErpLink {
-  doctype: string;
-  role: string;
-  erp_id: string;
-}
-
 export default function ProjectDetail({
   projectId,
 }: ProjectDetailProps) {
 
   const [project, setProject] =
     useState<Project | null>(null);
-
-  const [stockEntryReceiptId, setStockEntryReceiptId] =
-    useState<string | null>(null);
 
   const [loading, setLoading] =
     useState(false);
@@ -42,7 +33,6 @@ export default function ProjectDetail({
 
     if (projectId == null) {
       setProject(null);
-      setStockEntryReceiptId(null);
       return;
     }
 
@@ -52,51 +42,23 @@ export default function ProjectDetail({
 
       try {
 
-        const [
-          projectResult,
-          linkResult,
-        ] = await Promise.all([
+        const {
+          data,
+          error,
+        } = await supabase
+          .from('projects')
+          .select(`
+            id,
+            project_name
+          `)
+          .eq('id', projectId)
+          .single();
 
-          supabase
-            .from('projects')
-            .select(`
-              id,
-              project_name
-            `)
-            .eq('id', projectId)
-            .single(),
-
-          supabase
-            .from('project_erp_links')
-            .select(`
-              doctype,
-              role,
-              erp_id
-            `)
-            .eq('project_id', projectId),
-
-        ]);
-
-        if (projectResult.error) {
-          throw projectResult.error;
+        if (error) {
+          throw error;
         }
 
-        if (linkResult.error) {
-          throw linkResult.error;
-        }
-
-        setProject(projectResult.data);
-
-        const receiptLink =
-          (linkResult.data as ProjectErpLink[]).find(
-            (link) =>
-              link.doctype === 'Stock Entry' &&
-              link.role === 'receipt',
-          );
-
-        setStockEntryReceiptId(
-          receiptLink?.erp_id ?? null,
-        );
+        setProject(data);
 
       } catch (e) {
 
@@ -106,7 +68,6 @@ export default function ProjectDetail({
         );
 
         setProject(null);
-        setStockEntryReceiptId(null);
 
       } finally {
 
@@ -198,7 +159,7 @@ export default function ProjectDetail({
           }}
         >
           <StockEntryReceipt
-            stockEntryName={stockEntryReceiptId}
+            projectId={projectId}
           />
         </div>
       </div>
