@@ -5,75 +5,77 @@ import {
   useState,
 } from 'react';
 
+import {
+  StockEntry,
+  StockEntryItem,
+} from './types';
 
-interface StockEntryReceiptProps {
+import StockEntryHeader from './StockEntryHeader';
+import StockEntryGrid from './StockEntryGrid';
+import StockEntryFooter from './StockEntryFooter';
+
+import ItemModal from '../../Item/ItemModal';
+
+interface ProjectContext {
+
+  projectId: number;
+
+  customer: string | null;
+
+  company: string | null;
+
+  expected_start_date: string | null;
+
+}
+
+interface Props {
+
   stockEntryName: string | null;
+
+  project: ProjectContext | null;
+
 }
-
-
-interface StockEntryItem {
-  targetWarehouse: string;
-  itemCode: string;
-  qty: number;
-}
-
-
-interface StockEntryResponse {
-  name?: string;
-  stock_entry_type?: string;
-  posting_date?: string;
-  items?: {
-    target_warehouse?: string;
-    item_code?: string;
-    qty?: number;
-  }[];
-}
-
-
-
-const emptyRow = (): StockEntryItem => ({
-  targetWarehouse: '',
-  itemCode: '',
-  qty: 0,
-});
-
-
 
 export default function StockEntryReceipt({
-  stockEntryName,
-}: StockEntryReceiptProps) {
 
+  stockEntryName,
+
+  project,
+
+}: Props) {
+
+  const [doc, setDoc] =
+    useState<StockEntry | null>(null);
 
   const [items, setItems] =
-    useState<StockEntryItem[]>([
-      emptyRow(),
-    ]);
-
+    useState<StockEntryItem[]>([]);
 
   const [loading, setLoading] =
     useState(false);
 
-
   const [error, setError] =
     useState('');
 
-
+  const [itemModalOpen, setItemModalOpen] =
+    useState(false);
 
   useEffect(() => {
 
     if (!stockEntryName) {
-      setItems([
-        emptyRow(),
-      ]);
+
+      setDoc(null);
+
+      setItems([]);
+
       return;
+
     }
 
-
-    async function fetchStockEntry() {
+    async function fetchDoc() {
 
       setLoading(true);
-      setError('');
 
+      setError('');
 
       try {
 
@@ -83,61 +85,34 @@ export default function StockEntryReceipt({
               stockEntryName,
             )}`,
             {
-              method: 'GET',
               cache: 'no-store',
             },
           );
 
-
-        const result =
-          await response.json() as StockEntryResponse;
-
-
-
         if (!response.ok) {
+
           throw new Error(
             'Stock Entry取得失敗',
           );
+
         }
 
+        const result =
+          await response.json();
 
+        setDoc(result);
 
-        const rows =
-          result.items?.map(
-            (item) => ({
-              targetWarehouse:
-                item.target_warehouse ?? '',
-
-              itemCode:
-                item.item_code ?? '',
-
-              qty:
-                item.qty ?? 0,
-            }),
-          ) ?? [];
-
-
-
-        setItems([
-          ...rows,
-          emptyRow(),
-        ]);
-
-
+        setItems(
+          result.items ?? [],
+        );
 
       } catch (e) {
 
         setError(
           e instanceof Error
             ? e.message
-            : 'Stock Entry取得失敗',
+            : '読込失敗',
         );
-
-
-        setItems([
-          emptyRow(),
-        ]);
-
 
       } finally {
 
@@ -147,315 +122,119 @@ export default function StockEntryReceipt({
 
     }
 
-
-    void fetchStockEntry();
-
+    void fetchDoc();
 
   }, [stockEntryName]);
 
+  async function handleSave() {
 
-
-
-  function updateRow(
-    index: number,
-    key: keyof StockEntryItem,
-    value: string | number,
-  ) {
-
-
-    const next =
-      [...items];
-
-
-    next[index] = {
-      ...next[index],
-      [key]: value,
-    };
-
-
-
-    const last =
-      next[next.length - 1];
-
-
-
-    // 最終行に入力されたら空行追加
-    if (
-      last.targetWarehouse ||
-      last.itemCode ||
-      last.qty > 0
-    ) {
-
-      next.push(
-        emptyRow(),
-      );
-
-    }
-
-
-
-    setItems(next);
+    console.log(
+      '保存',
+      items,
+    );
 
   }
 
+  async function handleSubmit() {
 
-
-
-  function deleteRow(
-    index: number,
-  ) {
-
-    const next =
-      items.filter(
-        (_, i) =>
-          i !== index,
-      );
-
-
-
-    if (
-      next.length === 0 ||
-      (
-        next.length > 0 &&
-        (
-          next[next.length - 1].targetWarehouse ||
-          next[next.length - 1].itemCode ||
-          next[next.length - 1].qty > 0
-        )
-      )
-    ) {
-
-      next.push(
-        emptyRow(),
-      );
-
-    }
-
-
-
-    setItems(next);
+    console.log(
+      'Submit',
+    );
 
   }
-
-
-
-
 
   if (loading) {
+
     return (
       <div
         style={{
-          padding: 12,
+          padding: 16,
         }}
       >
-        入庫情報読込中...
+        読込中...
       </div>
     );
+
   }
 
-
-
   if (error) {
+
     return (
       <div
         style={{
-          padding: 12,
-          color: '#c62828',
+          padding: 16,
+          color: 'red',
         }}
       >
         {error}
       </div>
     );
+
   }
 
-
-
-
   return (
-    <div
-      style={{
-        padding: 12,
-      }}
-    >
 
-      <h3
+    <>
+
+      <div
         style={{
-          margin: '0 0 12px',
-          fontSize: 15,
-        }}
-      >
-        在庫入庫
-      </h3>
-
-
-
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: 13,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
         }}
       >
 
-        <thead>
+        <StockEntryHeader
+          doc={doc}
+        />
 
-          <tr>
+        <StockEntryGrid
+          items={items}
+          setItems={setItems}
+          onOpenItemModal={() =>
+            setItemModalOpen(true)
+          }
+        />
 
-            <th style={th}>
-              Target Warehouse
-            </th>
+        <StockEntryFooter
+          loading={loading}
+          isSubmitted={
+            doc?.docstatus === 1
+          }
+          onSave={
+            handleSave
+          }
+          onSubmit={
+            handleSubmit
+          }
+        />
 
+      </div>
 
-            <th style={th}>
-              Item Code
-            </th>
+      <ItemModal
 
+        open={itemModalOpen}
 
-            <th style={th}>
-              Qty
-            </th>
+        customer={
+          project?.customer ?? ''
+        }
 
+        onClose={() =>
+          setItemModalOpen(false)
+        }
 
-            <th style={th}>
-              操作
-            </th>
+        onSelect={(item) => {
 
-          </tr>
+          console.log(item);
 
-        </thead>
+          setItemModalOpen(false);
 
+        }}
 
+      />
 
-        <tbody>
+    </>
 
-          {items.map(
-            (item, index) => (
-
-              <tr
-                key={index}
-              >
-
-                <td style={td}>
-
-                  <input
-                    value={
-                      item.targetWarehouse
-                    }
-                    onChange={(e) =>
-                      updateRow(
-                        index,
-                        'targetWarehouse',
-                        e.target.value,
-                      )
-                    }
-                    style={input}
-                  />
-
-                </td>
-
-
-
-                <td style={td}>
-
-                  <input
-                    value={
-                      item.itemCode
-                    }
-                    onChange={(e) =>
-                      updateRow(
-                        index,
-                        'itemCode',
-                        e.target.value,
-                      )
-                    }
-                    style={input}
-                  />
-
-                </td>
-
-
-
-                <td style={td}>
-
-                  <input
-                    type="number"
-                    value={
-                      item.qty
-                    }
-                    onChange={(e) =>
-                      updateRow(
-                        index,
-                        'qty',
-                        Number(
-                          e.target.value,
-                        ),
-                      )
-                    }
-                    style={{
-                      ...input,
-                      width: 80,
-                    }}
-                  />
-
-                </td>
-
-
-
-                <td style={td}>
-
-                  {
-                    (
-                      item.targetWarehouse ||
-                      item.itemCode ||
-                      item.qty > 0
-                    ) && (
-                      <button
-                        onClick={() =>
-                          deleteRow(index)
-                        }
-                      >
-                        ×
-                      </button>
-                    )
-                  }
-
-                </td>
-
-
-              </tr>
-
-            ),
-          )}
-
-        </tbody>
-
-      </table>
-
-
-    </div>
   );
+
 }
-
-
-
-
-const th = {
-  borderBottom:
-    '1px solid #ddd',
-  padding: 6,
-  textAlign: 'left' as const,
-};
-
-
-const td = {
-  borderBottom:
-    '1px solid #eee',
-  padding: 4,
-};
-
-
-const input = {
-  width: '100%',
-  padding: '4px 6px',
-  boxSizing: 'border-box' as const,
-};

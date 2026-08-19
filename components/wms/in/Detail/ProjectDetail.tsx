@@ -10,70 +10,126 @@ import StockEntryReceipt from '../../../erp-doctype/StockEntry/Receipt/StockEntr
 
 import { supabase } from '../../../../lib/supabaseClient';
 
+interface ProjectContext {
+  projectId: number;
+  customer: string | null;
+  company: string | null;
+  expected_start_date: string | null;
+}
 
 interface ProjectDetailProps {
   projectId: number | null;
 }
 
-
-interface Project {
-  id: number;
-  project_name: string;
-  erp_stock_entry_receipt_id: string | null;
+interface ProjectErpLink {
+  doctype: string;
+  role: string;
+  erp_id: string;
 }
 
+function getErpId(
+  links: ProjectErpLink[],
+  doctype: string,
+  role: string,
+) {
+  return (
+    links.find(
+      (x) =>
+        x.doctype === doctype &&
+        x.role === role,
+    )?.erp_id ?? null
+  );
+}
 
 export default function ProjectDetail({
   projectId,
 }: ProjectDetailProps) {
 
   const [project, setProject] =
-    useState<Project | null>(null);
+    useState<ProjectContext | null>(null);
 
+  const [erpLinks, setErpLinks] =
+    useState<ProjectErpLink[]>([]);
 
   const [loading, setLoading] =
     useState(false);
 
-
   useEffect(() => {
 
     if (projectId == null) {
+
       setProject(null);
+      setErpLinks([]);
+
       return;
+
     }
 
-
-    async function fetchProject() {
+    async function fetchData() {
 
       setLoading(true);
 
-
       try {
 
-        const {
-          data,
-          error,
-        } = await supabase
-          .from('projects')
-          .select(`
-            id,
-            project_name,
-            erp_stock_entry_receipt_id
-          `)
-          .eq(
-            'id',
-            projectId,
-          )
-          .single();
+        const [
+          projectResult,
+          linkResult,
+        ] = await Promise.all([
 
+          supabase
+            .from('projects')
+            .select(`
+              id,
+              customer,
+              company,
+              expected_start_date
+            `)
+            .eq(
+              'id',
+              projectId,
+            )
+            .single(),
 
-        if (error) {
-          throw error;
+          supabase
+            .from('project_erp_links')
+            .select(`
+              doctype,
+              role,
+              erp_id
+            `)
+            .eq(
+              'project_id',
+              projectId,
+            ),
+
+        ]);
+
+        if (
+          projectResult.error
+        ) {
+          throw projectResult.error;
         }
 
+        if (
+          linkResult.error
+        ) {
+          throw linkResult.error;
+        }
 
-        setProject(data);
+        setProject({
+          projectId:
+            projectResult.data.id,
+          customer:
+            projectResult.data.customer,
+          company:
+            projectResult.data.company,
+          expected_start_date:
+            projectResult.data.expected_start_date,
+        });
 
+        setErpLinks(
+          linkResult.data ?? [],
+        );
 
       } catch (e) {
 
@@ -83,7 +139,7 @@ export default function ProjectDetail({
         );
 
         setProject(null);
-
+        setErpLinks([]);
 
       } finally {
 
@@ -93,13 +149,9 @@ export default function ProjectDetail({
 
     }
 
-
-    void fetchProject();
-
+    void fetchData();
 
   }, [projectId]);
-
-
 
   if (projectId == null) {
     return (
@@ -109,8 +161,6 @@ export default function ProjectDetail({
     );
   }
 
-
-
   if (loading) {
     return (
       <div style={{ padding: 16 }}>
@@ -119,17 +169,19 @@ export default function ProjectDetail({
     );
   }
 
-
-
-  if (!project) {
-    return (
-      <div style={{ padding: 16 }}>
-        プロジェクトがありません。
-      </div>
+  const purchaseReceiptName =
+    getErpId(
+      erpLinks,
+      'Purchase Receipt',
+      'main',
     );
-  }
 
-
+  const stockEntryReceiptName =
+    getErpId(
+      erpLinks,
+      'Stock Entry',
+      'receipt',
+    );
 
   return (
     <div
@@ -142,31 +194,6 @@ export default function ProjectDetail({
         boxSizing: 'border-box',
       }}
     >
-
-      <div
-        style={{
-          padding: 16,
-          borderBottom:
-            '1px solid #ddd',
-          flexShrink: 0,
-        }}
-      >
-
-        <h2
-          style={{
-            margin: 0,
-            marginBottom: 8,
-            fontSize: 18,
-          }}
-        >
-          {project.project_name}
-        </h2>
-
-
-      </div>
-
-
-
       <div
         style={{
           flex: 1,
@@ -175,18 +202,18 @@ export default function ProjectDetail({
           boxSizing: 'border-box',
         }}
       >
-
         <div
           style={{
             marginBottom: 24,
           }}
         >
           <PurchaseReceiptDetail
-            projectId={projectId}
+            purchaseReceiptName={
+              purchaseReceiptName
+            }
+            project={project}
           />
         </div>
-
-
 
         <div
           style={{
@@ -195,18 +222,15 @@ export default function ProjectDetail({
             paddingTop: 16,
           }}
         >
-
           <StockEntryReceipt
             stockEntryName={
-              project.erp_stock_entry_receipt_id
+              stockEntryReceiptName
             }
+            project={project}
           />
-
         </div>
 
-
       </div>
-
     </div>
   );
 }

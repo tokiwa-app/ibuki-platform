@@ -3,13 +3,11 @@
 import { useState } from 'react';
 
 import MasterDetailLayout from '../../../components/layout/MasterDetailLayout';
-import DeliveryDetail from '../../../components/wms/DeliveryDetail';
 import DeliveryList from '../../../components/wms/out/DeliveryList';
 
 export default function WmsPage() {
   const [selectedName, setSelectedName] =
     useState('');
-
 
   return (
     <main
@@ -21,16 +19,10 @@ export default function WmsPage() {
         boxSizing: 'border-box',
       }}
     >
-
       <MasterDetailLayout
-
         title="出庫管理"
-
         titleBackground="#2b579a"
-
         titleColor="#fff"
-
-
         headerRight={
           <button
             style={{
@@ -46,24 +38,14 @@ export default function WmsPage() {
             取引先コード 🔍
           </button>
         }
-
-
         left={
           <DeliveryList
             selectedName={selectedName}
             onSelect={setSelectedName}
           />
         }
-
-
-        right={
-          <DeliveryDetail
-            name={selectedName}
-          />
-        }
-
+        right={<div />}
       />
-
     </main>
   );
 }
