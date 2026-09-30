@@ -59,7 +59,7 @@ export function useOutTransactions() {
 
     try {
       let query = supabase
-        .from('t_transactions')
+        .from('v_out_transactions')
         .select(`
           id,
           date_created,
@@ -71,6 +71,12 @@ export function useOutTransactions() {
           billing_id,
           delivery_destination_id,
           payment_destination_id,
+
+          billing_partner_name,
+          billing_partner_short_name,
+
+          payment_partner_name,
+          payment_partner_short_name,
 
           delivery_date,
           delivery_time,
@@ -104,19 +110,13 @@ export function useOutTransactions() {
 
           prefecture
         `)
-
-        // 出荷のみ
-        .eq('category', 1)
-
         .order('delivery_date', {
           ascending: false,
           nullsFirst: false,
         })
-
         .order('id', {
           ascending: false,
         })
-
         .limit(1000);
 
       if (dateFrom) {
@@ -147,6 +147,10 @@ export function useOutTransactions() {
 
       const gridRows: GridRow[] =
         transactions.map((transaction) => {
+          // ========================================
+          // 支払
+          // ========================================
+
           const pQuantity =
             num(transaction.p_quantity);
 
@@ -158,6 +162,14 @@ export function useOutTransactions() {
 
           const pPremium =
             num(transaction.p_premium);
+
+          const pAmount =
+            pQuantity * pUnitPrice +
+            pPremium;
+
+          // ========================================
+          // 請求
+          // ========================================
 
           const dQuantity =
             num(transaction.d_quantity);
@@ -171,14 +183,13 @@ export function useOutTransactions() {
           const dPremium =
             num(transaction.d_premium);
 
-          // 現在の画面計算を維持
-          const pAmount =
-            pQuantity * pUnitPrice +
-            pPremium;
-
           const dAmount =
             dQuantity * dUnitPrice +
             dPremium;
+
+          // ========================================
+          // Grid Row
+          // ========================================
 
           return {
             id: transaction.id,
@@ -212,6 +223,18 @@ export function useOutTransactions() {
 
             payment_destination_id:
               transaction.payment_destination_id,
+
+            billing_partner_name:
+              transaction.billing_partner_name,
+
+            billing_partner_short_name:
+              transaction.billing_partner_short_name,
+
+            payment_partner_name:
+              transaction.payment_partner_name,
+
+            payment_partner_short_name:
+              transaction.payment_partner_short_name,
 
             project_name:
               transaction.project_name,
@@ -290,7 +313,7 @@ export function useOutTransactions() {
   }, []);
 
   // ==========================================================
-  // UPDATE
+  // t_transactions UPDATE
   // ==========================================================
 
   const updateTransaction =
@@ -345,9 +368,9 @@ export function useOutTransactions() {
         }
 
         try {
-          // ------------------------------------------
-          // Grid名 → t_transactions列名
-          // ------------------------------------------
+          // ========================================
+          // 数値項目
+          // ========================================
 
           const numericMap:
             Record<string, string> = {
@@ -390,9 +413,9 @@ export function useOutTransactions() {
             return;
           }
 
-          // ------------------------------------------
-          // 通常項目
-          // ------------------------------------------
+          // ========================================
+          // t_transactions 通常項目
+          // ========================================
 
           const parentMap:
             Record<string, string> = {
@@ -451,6 +474,8 @@ export function useOutTransactions() {
           const dbField =
             parentMap[field];
 
+          // Viewで取得した取引先名などは
+          // t_transactionsへUPDATEしない
           if (!dbField) {
             return;
           }
@@ -466,6 +491,8 @@ export function useOutTransactions() {
             newValue
           );
 
+          // ID変更時は取引先名も変わるので
+          // Viewから再取得
           await loadData();
         } catch (e) {
           console.error(
