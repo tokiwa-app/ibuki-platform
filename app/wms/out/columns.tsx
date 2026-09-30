@@ -113,13 +113,20 @@ export function createColumnDefs({
       editable: true,
     },
 
+    // ========================================================
+    // PID
+    // ========================================================
+
     {
-      // PIDはまだ正式マッピング未確定
       headerName: 'PID',
       field: 'delivery_destination_id',
       width: 85,
       editable: true,
     },
+
+    // ========================================================
+    // 請求先
+    // ========================================================
 
     {
       headerName: '請求先ID',
@@ -129,11 +136,26 @@ export function createColumnDefs({
     },
 
     {
+      headerName: '請求先',
+      field: 'billing_partner_name',
+      width: 180,
+      editable: false,
+    },
+
+    // ========================================================
+    // 名称
+    // ========================================================
+
+    {
       headerName: '名称',
       field: 'project_name',
       width: 240,
       editable: true,
     },
+
+    // ========================================================
+    // 支払先 / 使用便
+    // ========================================================
 
     {
       headerName: '支払先ID',
@@ -142,8 +164,16 @@ export function createColumnDefs({
       editable: true,
     },
 
-    // 使用便は unit ではないので、
-    // partners JOIN対応時に追加する
+    {
+      headerName: '使用便',
+      field: 'payment_partner_name',
+      width: 180,
+      editable: false,
+    },
+
+    // ========================================================
+    // D/P月
+    // ========================================================
 
     {
       headerName: 'D月',
@@ -159,6 +189,10 @@ export function createColumnDefs({
       editable: true,
     },
 
+    // ========================================================
+    // 担当
+    // ========================================================
+
     {
       headerName: '先方担当',
       field: 'client_staff',
@@ -172,6 +206,10 @@ export function createColumnDefs({
       width: 90,
       editable: true,
     },
+
+    // ========================================================
+    // ボタン
+    // ========================================================
 
     {
       headerName: '',
@@ -251,6 +289,10 @@ export function createColumnDefs({
       },
     },
 
+    // ========================================================
+    // その他
+    // ========================================================
+
     {
       headerName: '都道府県',
       field: 'prefecture',
@@ -278,6 +320,7 @@ export function createColumnDefs({
 
     {
       headerName: '支払',
+
       marryChildren: true,
 
       children: [
@@ -286,6 +329,7 @@ export function createColumnDefs({
           field: 'pQuantity',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -299,6 +343,7 @@ export function createColumnDefs({
           field: 'pWeight',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -312,6 +357,7 @@ export function createColumnDefs({
           field: 'pUnitPrice',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -325,6 +371,7 @@ export function createColumnDefs({
           field: 'pPremium',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -338,7 +385,6 @@ export function createColumnDefs({
           field: 'pAmount',
           width: 105,
 
-          // 計算値なので直接編集しない
           editable: false,
 
           valueFormatter:
@@ -346,8 +392,10 @@ export function createColumnDefs({
 
           cellStyle: {
             textAlign: 'right',
+
             backgroundColor:
               '#ffd0e3',
+
             fontWeight: 'bold',
           },
         },
@@ -360,6 +408,7 @@ export function createColumnDefs({
 
     {
       headerName: '請求',
+
       marryChildren: true,
 
       children: [
@@ -368,6 +417,7 @@ export function createColumnDefs({
           field: 'dQuantity',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -381,6 +431,7 @@ export function createColumnDefs({
           field: 'dWeight',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -394,6 +445,7 @@ export function createColumnDefs({
           field: 'dUnitPrice',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -407,6 +459,7 @@ export function createColumnDefs({
           field: 'dPremium',
           width: 85,
           editable: true,
+
           valueFormatter:
             numberFormatter,
 
@@ -419,6 +472,7 @@ export function createColumnDefs({
           headerName: '金額',
           field: 'dAmount',
           width: 105,
+
           editable: false,
 
           valueFormatter:
@@ -426,13 +480,19 @@ export function createColumnDefs({
 
           cellStyle: {
             textAlign: 'right',
+
             backgroundColor:
               '#d5f7fa',
+
             fontWeight: 'bold',
           },
         },
       ],
     },
+
+    // ========================================================
+    // 粗利
+    // ========================================================
 
     {
       headerName: '粗利',
@@ -453,6 +513,10 @@ export function createColumnDefs({
         fontWeight: 'bold',
       }),
     },
+
+    // ========================================================
+    // 状態
+    // ========================================================
 
     {
       headerName: '状態',
