@@ -8,7 +8,8 @@ import type {
   CellValueChangedEvent,
   ColDef,
   ColGroupDef,
-  GridReadyEvent,
+  ICellRendererParams,
+  ValueFormatterParams,
 } from 'ag-grid-community';
 
 import 'ag-grid-community/styles/ag-grid.css';
@@ -45,7 +46,9 @@ interface Transaction {
 
   date_created: string | null;
   delivery_source: string | null;
+
   staff: string | null;
+  client_staff: string | null;
 
   billing_id: number | null;
   delivery_destination_id: number | null;
@@ -55,8 +58,6 @@ interface Transaction {
   delivery_time: string | null;
 
   slip_no: string | null;
-  client_staff: string | null;
-
   order_no: string | null;
 
   d_quantity: number | null;
@@ -119,10 +120,8 @@ interface GridRow {
   order_no: string | null;
 
   prefecture: string | null;
-
   status: string | null;
 
-  // 支払
   pDetailId: number | null;
 
   pQuantity: number;
@@ -131,7 +130,6 @@ interface GridRow {
   pPremium: number;
   pAmount: number;
 
-  // 請求
   dDetailId: number | null;
 
   dQuantity: number;
@@ -149,7 +147,7 @@ interface GridRow {
 // Utility
 // ============================================================
 
-function n(value: unknown): number {
+function num(value: unknown): number {
   if (
     value === null ||
     value === undefined ||
@@ -158,25 +156,29 @@ function n(value: unknown): number {
     return 0;
   }
 
-  const valueNumber = Number(value);
+  const result = Number(value);
 
-  return Number.isFinite(valueNumber)
-    ? valueNumber
+  return Number.isFinite(result)
+    ? result
     : 0;
 }
 
-function formatNumber(value: unknown) {
-  const valueNumber = n(value);
+function numberFormatter(
+  params: ValueFormatterParams<GridRow>
+) {
+  const value = num(params.value);
 
-  if (valueNumber === 0) {
+  if (value === 0) {
     return '';
   }
 
-  return valueNumber.toLocaleString('ja-JP');
+  return value.toLocaleString('ja-JP');
 }
 
-function categoryLabel(value: number) {
-  switch (value) {
+function categoryLabel(value: unknown) {
+  const category = Number(value);
+
+  switch (category) {
     case 1:
       return '外注';
 
@@ -187,8 +189,36 @@ function categoryLabel(value: number) {
       return '出庫';
 
     default:
-      return String(value ?? '');
+      return value === null ||
+        value === undefined
+        ? ''
+        : String(value);
   }
+}
+
+// ============================================================
+// ボタンRenderer
+// ============================================================
+
+function GridButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      style={gridButtonStyle}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick();
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 // ============================================================
@@ -226,7 +256,9 @@ export default function WmsOutPage() {
           id,
           date_created,
           delivery_source,
+
           staff,
+          client_staff,
 
           billing_id,
           delivery_destination_id,
@@ -236,7 +268,6 @@ export default function WmsOutPage() {
           delivery_time,
 
           slip_no,
-          client_staff,
           order_no,
 
           d_quantity,
@@ -317,195 +348,205 @@ export default function WmsOutPage() {
         (data ?? []) as Transaction[];
 
       const gridRows: GridRow[] =
-        transactions.map((transaction) => {
-          const details =
-            transaction.t_transaction_details ??
-            [];
+        transactions.map(
+          (transaction) => {
+            const details =
+              transaction.t_transaction_details ??
+              [];
 
-          const dDetail =
-            details.find(
-              (detail) =>
-                detail.detail_type === 'D'
-            ) ?? null;
+            // D代表
+            const dDetail =
+              details.find(
+                (detail) =>
+                  detail.detail_type ===
+                  'D'
+              ) ?? null;
 
-          const pDetail =
-            details.find(
-              (detail) =>
-                detail.detail_type === 'P'
-            ) ?? null;
+            // P代表
+            const pDetail =
+              details.find(
+                (detail) =>
+                  detail.detail_type ===
+                  'P'
+              ) ?? null;
 
-          const normalDetails =
-            details.filter(
-              (detail) =>
-                !detail.detail_type ||
-                detail.detail_type ===
-                  'normal'
-            );
+            // 通常明細
+            const normalDetails =
+              details.filter(
+                (detail) =>
+                  !detail.detail_type ||
+                  detail.detail_type ===
+                    'normal'
+              );
 
-          // ----------------------------------
-          // 支払
-          // ----------------------------------
+            // =================================
+            // P 支払
+            // =================================
 
-          const pQuantity =
-            pDetail?.quantity ??
-            transaction.p_quantity ??
-            0;
+            const pQuantity =
+              pDetail?.quantity ??
+              transaction.p_quantity ??
+              0;
 
-          const pUnitPrice =
-            pDetail?.unit_price ??
-            transaction.p_unit_price ??
-            0;
+            const pUnitPrice =
+              pDetail?.unit_price ??
+              transaction.p_unit_price ??
+              0;
 
-          const pWeight =
-            transaction.p_weight ?? 0;
+            const pWeight =
+              transaction.p_weight ?? 0;
 
-          const pPremium =
-            transaction.p_premium ?? 0;
+            const pPremium =
+              transaction.p_premium ?? 0;
 
-          const pAmount =
-            pDetail?.amount !== null &&
-            pDetail?.amount !== undefined
-              ? n(pDetail.amount)
-              : n(pQuantity) *
-                    n(pUnitPrice) +
-                n(pPremium);
+            const pAmount =
+              pDetail?.amount !== null &&
+              pDetail?.amount !== undefined
+                ? num(pDetail.amount)
+                : num(pQuantity) *
+                    num(pUnitPrice) +
+                  num(pPremium);
 
-          // ----------------------------------
-          // 請求
-          // ----------------------------------
+            // =================================
+            // D 請求
+            // =================================
 
-          const dQuantity =
-            dDetail?.quantity ??
-            transaction.d_quantity ??
-            0;
+            const dQuantity =
+              dDetail?.quantity ??
+              transaction.d_quantity ??
+              0;
 
-          const dUnitPrice =
-            dDetail?.unit_price ??
-            transaction.d_unit_price ??
-            0;
+            const dUnitPrice =
+              dDetail?.unit_price ??
+              transaction.d_unit_price ??
+              0;
 
-          const dWeight =
-            transaction.d_weight ?? 0;
+            const dWeight =
+              transaction.d_weight ?? 0;
 
-          const dPremium =
-            transaction.d_premium ?? 0;
+            const dPremium =
+              transaction.d_premium ?? 0;
 
-          const dAmount =
-            dDetail?.amount !== null &&
-            dDetail?.amount !== undefined
-              ? n(dDetail.amount)
-              : n(dQuantity) *
-                    n(dUnitPrice) +
-                n(dPremium);
+            const dAmount =
+              dDetail?.amount !== null &&
+              dDetail?.amount !== undefined
+                ? num(dDetail.amount)
+                : num(dQuantity) *
+                    num(dUnitPrice) +
+                  num(dPremium);
 
-          return {
-            id: transaction.id,
+            return {
+              id: transaction.id,
 
-            category:
-              transaction.category,
+              category:
+                transaction.category,
 
-            date_created:
-              transaction.date_created,
+              date_created:
+                transaction.date_created,
 
-            delivery_date:
-              transaction.delivery_date,
+              delivery_date:
+                transaction.delivery_date,
 
-            delivery_time:
-              transaction.delivery_time,
+              delivery_time:
+                transaction.delivery_time,
 
-            delivery_source:
-              transaction.delivery_source,
+              delivery_source:
+                transaction.delivery_source,
 
-            staff:
-              transaction.staff,
+              staff:
+                transaction.staff,
 
-            client_staff:
-              transaction.client_staff,
+              client_staff:
+                transaction.client_staff,
 
-            billing_id:
-              transaction.billing_id,
+              billing_id:
+                transaction.billing_id,
 
-            delivery_destination_id:
-              transaction.delivery_destination_id,
+              delivery_destination_id:
+                transaction.delivery_destination_id,
 
-            payment_destination_id:
-              transaction.payment_destination_id,
+              payment_destination_id:
+                transaction.payment_destination_id,
 
-            project_name:
-              transaction.project_name,
+              project_name:
+                transaction.project_name,
 
-            item_name:
-              transaction.item_name,
+              item_name:
+                transaction.item_name,
 
-            name:
-              transaction.name,
+              name:
+                transaction.name,
 
-            unit:
-              transaction.unit,
+              unit:
+                transaction.unit,
 
-            d_month:
-              transaction.d_month,
+              d_month:
+                transaction.d_month,
 
-            p_month:
-              transaction.p_month,
+              p_month:
+                transaction.p_month,
 
-            slip_no:
-              transaction.slip_no,
+              slip_no:
+                transaction.slip_no,
 
-            order_no:
-              transaction.order_no,
+              order_no:
+                transaction.order_no,
 
-            prefecture:
-              transaction.prefecture,
+              prefecture:
+                transaction.prefecture,
 
-            status:
-              transaction.status,
+              status:
+                transaction.status,
 
-            pDetailId:
-              pDetail?.id ?? null,
+              pDetailId:
+                pDetail?.id ?? null,
 
-            pQuantity:
-              n(pQuantity),
+              pQuantity:
+                num(pQuantity),
 
-            pWeight:
-              n(pWeight),
+              pWeight:
+                num(pWeight),
 
-            pUnitPrice:
-              n(pUnitPrice),
+              pUnitPrice:
+                num(pUnitPrice),
 
-            pPremium:
-              n(pPremium),
+              pPremium:
+                num(pPremium),
 
-            pAmount,
+              pAmount,
 
-            dDetailId:
-              dDetail?.id ?? null,
+              dDetailId:
+                dDetail?.id ?? null,
 
-            dQuantity:
-              n(dQuantity),
+              dQuantity:
+                num(dQuantity),
 
-            dWeight:
-              n(dWeight),
+              dWeight:
+                num(dWeight),
 
-            dUnitPrice:
-              n(dUnitPrice),
+              dUnitPrice:
+                num(dUnitPrice),
 
-            dPremium:
-              n(dPremium),
+              dPremium:
+                num(dPremium),
 
-            dAmount,
+              dAmount,
 
-            profit:
-              dAmount - pAmount,
+              profit:
+                dAmount - pAmount,
 
-            normalDetailCount:
-              normalDetails.length,
-          };
-        });
+              normalDetailCount:
+                normalDetails.length,
+            };
+          }
+        );
 
       setRows(gridRows);
     } catch (e) {
-      console.error(e);
+      console.error(
+        'loadData error:',
+        e
+      );
 
       setRows([]);
 
@@ -520,15 +561,18 @@ export default function WmsOutPage() {
   }, [dateFrom, dateTo]);
 
   // ==========================================================
-  // 初回読込
+  // 初回
   // ==========================================================
 
   useEffect(() => {
     void loadData();
+
+    // 初回だけ
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ==========================================================
-  // 親テーブル更新
+  // UPDATE
   // ==========================================================
 
   async function updateTransaction(
@@ -548,12 +592,8 @@ export default function WmsOutPage() {
     }
   }
 
-  // ==========================================================
-  // D/P更新
-  // ==========================================================
-
   async function updateDetail(
-    detailId: number,
+    id: number,
     field: string,
     value: unknown
   ) {
@@ -562,7 +602,7 @@ export default function WmsOutPage() {
       .update({
         [field]: value,
       })
-      .eq('id', detailId);
+      .eq('id', id);
 
     if (error) {
       throw error;
@@ -570,320 +610,318 @@ export default function WmsOutPage() {
   }
 
   // ==========================================================
-  // セル編集
+  // 編集
   // ==========================================================
 
-  async function onCellValueChanged(
-    event: CellValueChangedEvent<GridRow>
-  ) {
-    const row = event.data;
+  const handleCellValueChanged =
+    useCallback(
+      async (
+        event: CellValueChangedEvent<GridRow>
+      ) => {
+        const row = event.data;
 
-    if (!row) {
-      return;
-    }
+        if (!row) {
+          return;
+        }
 
-    const field =
-      event.colDef.field as
-        | keyof GridRow
-        | undefined;
+        const field =
+          event.colDef.field;
 
-    if (!field) {
-      return;
-    }
+        if (!field) {
+          return;
+        }
 
-    if (
-      event.newValue ===
-      event.oldValue
-    ) {
-      return;
-    }
+        if (
+          event.newValue ===
+          event.oldValue
+        ) {
+          return;
+        }
 
-    try {
-      // ======================================
-      // 支払 P
-      // ======================================
+        try {
+          // =================================
+          // P代表
+          // =================================
 
-      const pFieldMap: Record<
-        string,
-        string
-      > = {
-        pQuantity: 'quantity',
-        pUnitPrice: 'unit_price',
-        pAmount: 'amount',
-      };
+          if (
+            field === 'pQuantity' ||
+            field === 'pUnitPrice' ||
+            field === 'pAmount'
+          ) {
+            if (row.pDetailId) {
+              const detailField =
+                field === 'pQuantity'
+                  ? 'quantity'
+                  : field ===
+                      'pUnitPrice'
+                    ? 'unit_price'
+                    : 'amount';
 
-      if (pFieldMap[field]) {
-        if (row.pDetailId) {
-          await updateDetail(
-            row.pDetailId,
-            pFieldMap[field],
-            n(event.newValue)
-          );
-        } else {
-          // まだP代表明細が無い旧データ
-          const legacyMap: Record<
+              await updateDetail(
+                row.pDetailId,
+                detailField,
+                num(event.newValue)
+              );
+            } else {
+              // 旧データ
+              if (
+                field === 'pQuantity'
+              ) {
+                await updateTransaction(
+                  row.id,
+                  'p_quantity',
+                  num(event.newValue)
+                );
+              }
+
+              if (
+                field === 'pUnitPrice'
+              ) {
+                await updateTransaction(
+                  row.id,
+                  'p_unit_price',
+                  num(event.newValue)
+                );
+              }
+            }
+
+            await loadData();
+            return;
+          }
+
+          // =================================
+          // D代表
+          // =================================
+
+          if (
+            field === 'dQuantity' ||
+            field === 'dUnitPrice' ||
+            field === 'dAmount'
+          ) {
+            if (row.dDetailId) {
+              const detailField =
+                field === 'dQuantity'
+                  ? 'quantity'
+                  : field ===
+                      'dUnitPrice'
+                    ? 'unit_price'
+                    : 'amount';
+
+              await updateDetail(
+                row.dDetailId,
+                detailField,
+                num(event.newValue)
+              );
+            } else {
+              // 旧データ
+              if (
+                field === 'dQuantity'
+              ) {
+                await updateTransaction(
+                  row.id,
+                  'd_quantity',
+                  num(event.newValue)
+                );
+              }
+
+              if (
+                field === 'dUnitPrice'
+              ) {
+                await updateTransaction(
+                  row.id,
+                  'd_unit_price',
+                  num(event.newValue)
+                );
+              }
+            }
+
+            await loadData();
+            return;
+          }
+
+          // =================================
+          // P親側
+          // =================================
+
+          if (field === 'pWeight') {
+            await updateTransaction(
+              row.id,
+              'p_weight',
+              num(event.newValue)
+            );
+
+            await loadData();
+            return;
+          }
+
+          if (field === 'pPremium') {
+            await updateTransaction(
+              row.id,
+              'p_premium',
+              num(event.newValue)
+            );
+
+            await loadData();
+            return;
+          }
+
+          // =================================
+          // D親側
+          // =================================
+
+          if (field === 'dWeight') {
+            await updateTransaction(
+              row.id,
+              'd_weight',
+              num(event.newValue)
+            );
+
+            await loadData();
+            return;
+          }
+
+          if (field === 'dPremium') {
+            await updateTransaction(
+              row.id,
+              'd_premium',
+              num(event.newValue)
+            );
+
+            await loadData();
+            return;
+          }
+
+          // =================================
+          // 親の通常項目
+          // =================================
+
+          const parentMap: Record<
             string,
             string
           > = {
-            pQuantity:
-              'p_quantity',
+            delivery_date:
+              'delivery_date',
 
-            pUnitPrice:
-              'p_unit_price',
+            delivery_time:
+              'delivery_time',
+
+            delivery_source:
+              'delivery_source',
+
+            staff:
+              'staff',
+
+            client_staff:
+              'client_staff',
+
+            billing_id:
+              'billing_id',
+
+            delivery_destination_id:
+              'delivery_destination_id',
+
+            payment_destination_id:
+              'payment_destination_id',
+
+            project_name:
+              'project_name',
+
+            item_name:
+              'item_name',
+
+            unit:
+              'unit',
+
+            d_month:
+              'd_month',
+
+            p_month:
+              'p_month',
+
+            slip_no:
+              'slip_no',
+
+            order_no:
+              'order_no',
+
+            prefecture:
+              'prefecture',
+
+            status:
+              'status',
           };
 
-          const legacyField =
-            legacyMap[field];
+          const dbField =
+            parentMap[field];
 
-          if (legacyField) {
-            await updateTransaction(
-              row.id,
-              legacyField,
-              n(event.newValue)
-            );
+          if (!dbField) {
+            return;
           }
-        }
 
-        await loadData();
+          const newValue =
+            event.newValue === ''
+              ? null
+              : event.newValue;
 
-        return;
-      }
-
-      // ======================================
-      // 請求 D
-      // ======================================
-
-      const dFieldMap: Record<
-        string,
-        string
-      > = {
-        dQuantity: 'quantity',
-        dUnitPrice: 'unit_price',
-        dAmount: 'amount',
-      };
-
-      if (dFieldMap[field]) {
-        if (row.dDetailId) {
-          await updateDetail(
-            row.dDetailId,
-            dFieldMap[field],
-            n(event.newValue)
+          await updateTransaction(
+            row.id,
+            dbField,
+            newValue
           );
-        } else {
-          // まだD代表明細が無い旧データ
-          const legacyMap: Record<
-            string,
-            string
-          > = {
-            dQuantity:
-              'd_quantity',
 
-            dUnitPrice:
-              'd_unit_price',
-          };
+          await loadData();
+        } catch (e) {
+          console.error(
+            'update error:',
+            e
+          );
 
-          const legacyField =
-            legacyMap[field];
+          alert(
+            e instanceof Error
+              ? `保存失敗: ${e.message}`
+              : '保存失敗'
+          );
 
-          if (legacyField) {
-            await updateTransaction(
-              row.id,
-              legacyField,
-              n(event.newValue)
-            );
-          }
+          await loadData();
         }
+      },
+      [loadData]
+    );
 
-        await loadData();
+  // ==========================================================
+  // ボタン処理
+  // ==========================================================
 
-        return;
-      }
-
-      // ======================================
-      // 旧親側 P
-      // ======================================
-
-      const legacyPMap: Record<
-        string,
-        string
-      > = {
-        pWeight: 'p_weight',
-        pPremium: 'p_premium',
-      };
-
-      if (legacyPMap[field]) {
-        await updateTransaction(
-          row.id,
-          legacyPMap[field],
-          n(event.newValue)
-        );
-
-        await loadData();
-
-        return;
-      }
-
-      // ======================================
-      // 旧親側 D
-      // ======================================
-
-      const legacyDMap: Record<
-        string,
-        string
-      > = {
-        dWeight: 'd_weight',
-        dPremium: 'd_premium',
-      };
-
-      if (legacyDMap[field]) {
-        await updateTransaction(
-          row.id,
-          legacyDMap[field],
-          n(event.newValue)
-        );
-
-        await loadData();
-
-        return;
-      }
-
-      // ======================================
-      // 親テーブル
-      // ======================================
-
-      const parentFields: Record<
-        string,
-        string
-      > = {
-        delivery_date:
-          'delivery_date',
-
-        delivery_time:
-          'delivery_time',
-
-        delivery_source:
-          'delivery_source',
-
-        staff:
-          'staff',
-
-        client_staff:
-          'client_staff',
-
-        billing_id:
-          'billing_id',
-
-        delivery_destination_id:
-          'delivery_destination_id',
-
-        payment_destination_id:
-          'payment_destination_id',
-
-        project_name:
-          'project_name',
-
-        item_name:
-          'item_name',
-
-        unit:
-          'unit',
-
-        d_month:
-          'd_month',
-
-        p_month:
-          'p_month',
-
-        slip_no:
-          'slip_no',
-
-        order_no:
-          'order_no',
-
-        prefecture:
-          'prefecture',
-
-        status:
-          'status',
-      };
-
-      const dbField =
-        parentFields[field];
-
-      if (!dbField) {
-        return;
-      }
-
-      await updateTransaction(
-        row.id,
-        dbField,
-        event.newValue === ''
-          ? null
-          : event.newValue
-      );
-
-      await loadData();
-    } catch (e) {
-      console.error(
-        '保存エラー:',
-        e
-      );
-
+  const openDetail =
+    useCallback((row: GridRow) => {
       alert(
-        e instanceof Error
-          ? `保存失敗: ${e.message}`
-          : '保存失敗'
+        `詳細 ID: ${row.id}`
       );
+    }, []);
 
-      await loadData();
-    }
-  }
+  const openData =
+    useCallback((row: GridRow) => {
+      alert(
+        `データ ID: ${row.id}`
+      );
+    }, []);
 
-  // ==========================================================
-  // ボタン
-  // ==========================================================
-
-  function openDetail(row: GridRow) {
-    console.log(
-      '詳細',
-      row.id
-    );
-
-    // 後で詳細画面 / modal
-    alert(
-      `詳細 ID: ${row.id}`
-    );
-  }
-
-  function openData(row: GridRow) {
-    console.log(
-      'データ',
-      row.id
-    );
-
-    alert(
-      `データ ID: ${row.id}`
-    );
-  }
-
-  function openWork(row: GridRow) {
-    console.log(
-      '作業',
-      row.id
-    );
-
-    alert(
-      `作業 ID: ${row.id}`
-    );
-  }
+  const openWork =
+    useCallback((row: GridRow) => {
+      alert(
+        `作業 ID: ${row.id}`
+      );
+    }, []);
 
   // ==========================================================
-  // 列
+  // Columns
   // ==========================================================
 
   const columnDefs = useMemo<
-    (ColDef<GridRow> |
-      ColGroupDef<GridRow>)[]
+    (
+      | ColDef<GridRow>
+      | ColGroupDef<GridRow>
+    )[]
   >(
     () => [
       {
@@ -891,15 +929,12 @@ export default function WmsOutPage() {
         field: 'category',
         width: 75,
         pinned: 'left',
-        editable: false,
 
         valueFormatter: (
           params
         ) =>
           categoryLabel(
-            Number(
-              params.value
-            )
+            params.value
           ),
       },
 
@@ -908,14 +943,12 @@ export default function WmsOutPage() {
         field: 'id',
         width: 90,
         pinned: 'left',
-        editable: false,
       },
 
       {
         headerName: '出荷日',
         field: 'date_created',
         width: 105,
-        editable: false,
       },
 
       {
@@ -933,6 +966,7 @@ export default function WmsOutPage() {
       },
 
       {
+        // 現時点では仮割当
         headerName: 'PID',
         field:
           'delivery_destination_id',
@@ -950,7 +984,7 @@ export default function WmsOutPage() {
       {
         headerName: '名称',
         field: 'project_name',
-        width: 250,
+        width: 240,
         editable: true,
       },
 
@@ -963,6 +997,7 @@ export default function WmsOutPage() {
       },
 
       {
+        // 現時点ではunitを仮割当
         headerName: '使用便',
         field: 'unit',
         width: 100,
@@ -1002,140 +1037,83 @@ export default function WmsOutPage() {
       // ======================================================
 
       {
-        headerName: '詳細',
-        width: 75,
+        headerName: '',
+        width: 72,
         sortable: false,
         filter: false,
-        editable: false,
+        resizable: false,
 
         cellRenderer: (
-          params: any
+          params: ICellRendererParams<GridRow>
         ) => {
-          const button =
-            document.createElement(
-              'button'
-            );
+          if (!params.data) {
+            return null;
+          }
 
-          button.innerText =
-            '詳細';
-
-          button.style.background =
-            '#4472c4';
-
-          button.style.color =
-            '#fff';
-
-          button.style.border =
-            '1px solid #24508f';
-
-          button.style.borderRadius =
-            '4px';
-
-          button.style.cursor =
-            'pointer';
-
-          button.style.height =
-            '24px';
-
-          button.style.padding =
-            '0 8px';
-
-          button.onclick = () =>
-            openDetail(
-              params.data
-            );
-
-          return button;
+          return (
+            <GridButton
+              label="詳細"
+              onClick={() =>
+                openDetail(
+                  params.data!
+                )
+              }
+            />
+          );
         },
       },
 
       {
-        headerName: 'データ',
-        width: 75,
+        headerName: '',
+        width: 72,
         sortable: false,
         filter: false,
-        editable: false,
+        resizable: false,
 
         cellRenderer: (
-          params: any
+          params: ICellRendererParams<GridRow>
         ) => {
-          const button =
-            document.createElement(
-              'button'
-            );
+          if (!params.data) {
+            return null;
+          }
 
-          button.innerText =
-            'データ';
-
-          button.style.background =
-            '#4472c4';
-
-          button.style.color =
-            '#fff';
-
-          button.style.border =
-            '1px solid #24508f';
-
-          button.style.borderRadius =
-            '4px';
-
-          button.style.cursor =
-            'pointer';
-
-          button.style.height =
-            '24px';
-
-          button.onclick = () =>
-            openData(
-              params.data
-            );
-
-          return button;
+          return (
+            <GridButton
+              label="データ"
+              onClick={() =>
+                openData(
+                  params.data!
+                )
+              }
+            />
+          );
         },
       },
 
       {
-        headerName: '作業',
-        width: 75,
+        headerName: '',
+        width: 72,
         sortable: false,
         filter: false,
-        editable: false,
+        resizable: false,
 
         cellRenderer: (
-          params: any
+          params: ICellRendererParams<GridRow>
         ) => {
-          const button =
-            document.createElement(
-              'button'
-            );
+          if (!params.data) {
+            return null;
+          }
 
-          button.innerText =
-            '作業';
-
-          button.style.background =
-            '#4472c4';
-
-          button.style.color =
-            '#fff';
-
-          button.style.border =
-            '1px solid #24508f';
-
-          button.style.borderRadius =
-            '4px';
-
-          button.style.cursor =
-            'pointer';
-
-          button.style.height =
-            '24px';
-
-          button.onclick = () =>
-            openWork(
-              params.data
-            );
-
-          return button;
+          return (
+            <GridButton
+              label="作業"
+              onClick={() =>
+                openWork(
+                  params.data!
+                )
+              }
+            />
+          );
         },
       },
 
@@ -1172,77 +1150,62 @@ export default function WmsOutPage() {
         children: [
           {
             headerName: '数量',
-            field:
-              'pQuantity',
-            width: 90,
+            field: 'pQuantity',
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '重量',
             field: 'pWeight',
-            width: 90,
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '単価',
-            field:
-              'pUnitPrice',
-            width: 90,
+            field: 'pUnitPrice',
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '割増',
-            field:
-              'pPremium',
-            width: 90,
+            field: 'pPremium',
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '金額',
             field: 'pAmount',
-            width: 110,
+            width: 105,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
 
             cellStyle: {
+              textAlign: 'right',
               backgroundColor:
                 '#ffd0e3',
               fontWeight: 'bold',
@@ -1263,77 +1226,62 @@ export default function WmsOutPage() {
         children: [
           {
             headerName: '数量',
-            field:
-              'dQuantity',
-            width: 90,
+            field: 'dQuantity',
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '重量',
             field: 'dWeight',
-            width: 90,
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '単価',
-            field:
-              'dUnitPrice',
-            width: 90,
+            field: 'dUnitPrice',
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '割増',
-            field:
-              'dPremium',
-            width: 90,
+            field: 'dPremium',
+            width: 85,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
+            cellStyle: {
+              textAlign: 'right',
+            },
           },
 
           {
             headerName: '金額',
             field: 'dAmount',
-            width: 110,
+            width: 105,
             editable: true,
-
-            valueFormatter: (
-              params
-            ) =>
-              formatNumber(
-                params.value
-              ),
+            valueFormatter:
+              numberFormatter,
 
             cellStyle: {
+              textAlign: 'right',
               backgroundColor:
                 '#d5f7fa',
               fontWeight: 'bold',
@@ -1345,26 +1293,22 @@ export default function WmsOutPage() {
       {
         headerName: '粗利',
         field: 'profit',
-        width: 110,
-        editable: false,
+        width: 105,
 
-        valueFormatter: (
-          params
-        ) =>
-          formatNumber(
-            params.value
-          ),
+        valueFormatter:
+          numberFormatter,
 
         cellStyle: (
           params
         ) => ({
+          textAlign: 'right',
+
           backgroundColor:
-            n(params.value) < 0
+            num(params.value) < 0
               ? '#ffd6d6'
               : '#d9f7d9',
 
           fontWeight: 'bold',
-          textAlign: 'right',
         }),
       },
 
@@ -1372,8 +1316,7 @@ export default function WmsOutPage() {
         headerName: '明細数',
         field:
           'normalDetailCount',
-        width: 90,
-        editable: false,
+        width: 85,
       },
 
       {
@@ -1383,11 +1326,15 @@ export default function WmsOutPage() {
         editable: true,
       },
     ],
-    []
+    [
+      openData,
+      openDetail,
+      openWork,
+    ]
   );
 
   // ==========================================================
-  // デフォルト列設定
+  // Default column
   // ==========================================================
 
   const defaultColDef =
@@ -1397,33 +1344,15 @@ export default function WmsOutPage() {
         filter: true,
         resizable: true,
 
-        suppressHeaderMenuButton:
-          false,
-
         cellStyle: {
           fontSize: '12px',
-          display: 'flex',
-          alignItems: 'center',
         },
       }),
       []
     );
 
   // ==========================================================
-  // Grid ready
-  // ==========================================================
-
-  function onGridReady(
-    event: GridReadyEvent<GridRow>
-  ) {
-    // 必要ならここで列状態復元など
-    console.log(
-      'AG Grid ready'
-    );
-  }
-
-  // ==========================================================
-  // UI
+  // Render
   // ==========================================================
 
   return (
@@ -1435,18 +1364,16 @@ export default function WmsOutPage() {
         display: 'flex',
         flexDirection: 'column',
 
+        overflow: 'hidden',
+
         backgroundColor:
           '#f3f4f6',
-
-        overflow: 'hidden',
 
         fontFamily:
           '"Yu Gothic", "Meiryo", sans-serif',
       }}
     >
-      {/* ======================================================
-          上部
-      ====================================================== */}
+      {/* 上部ボタン */}
 
       <div
         style={{
@@ -1455,17 +1382,17 @@ export default function WmsOutPage() {
           display: 'flex',
           alignItems: 'center',
 
-          gap: 6,
+          gap: 5,
 
           padding: 6,
+
+          flexWrap: 'wrap',
 
           backgroundColor:
             '#eef1f5',
 
           borderBottom:
             '1px solid #aaa',
-
-          flexWrap: 'wrap',
         }}
       >
         <button
@@ -1509,30 +1436,28 @@ export default function WmsOutPage() {
             ...topButtonStyle,
             marginLeft: 15,
           }}
-          onClick={() =>
-            void loadData()
-          }
+          onClick={() => {
+            void loadData();
+          }}
         >
           更新
         </button>
       </div>
 
-      {/* ======================================================
-          検索
-      ====================================================== */}
+      {/* 検索 */}
 
       <div
         style={{
           flexShrink: 0,
 
-          height: 42,
+          minHeight: 42,
 
           display: 'flex',
           alignItems: 'center',
 
           gap: 8,
 
-          padding: '0 8px',
+          padding: '4px 8px',
 
           backgroundColor:
             '#fff',
@@ -1548,9 +1473,9 @@ export default function WmsOutPage() {
         <input
           type="date"
           value={dateFrom}
-          onChange={(e) =>
+          onChange={(event) =>
             setDateFrom(
-              e.target.value
+              event.target.value
             )
           }
         />
@@ -1560,18 +1485,18 @@ export default function WmsOutPage() {
         <input
           type="date"
           value={dateTo}
-          onChange={(e) =>
+          onChange={(event) =>
             setDateTo(
-              e.target.value
+              event.target.value
             )
           }
         />
 
         <button
           style={searchButtonStyle}
-          onClick={() =>
-            void loadData()
-          }
+          onClick={() => {
+            void loadData();
+          }}
         >
           検索
         </button>
@@ -1584,7 +1509,7 @@ export default function WmsOutPage() {
         >
           {loading
             ? '読込中...'
-            : `${rows.length}件`}
+            : `${rows.length} 件`}
         </span>
 
         {error && (
@@ -1599,9 +1524,7 @@ export default function WmsOutPage() {
         )}
       </div>
 
-      {/* ======================================================
-          AG GRID
-      ====================================================== */}
+      {/* AG Grid */}
 
       <div
         className="ag-theme-quartz"
@@ -1618,27 +1541,15 @@ export default function WmsOutPage() {
             defaultColDef
           }
 
-          onGridReady={
-            onGridReady
-          }
-
           onCellValueChanged={
-            onCellValueChanged
+            handleCellValueChanged
           }
-
-          rowSelection="single"
-
-          animateRows={false}
 
           rowHeight={28}
-
           headerHeight={30}
-
           groupHeaderHeight={30}
 
-          suppressRowClickSelection={
-            false
-          }
+          animateRows={false}
 
           stopEditingWhenCellsLoseFocus={
             true
@@ -1648,13 +1559,13 @@ export default function WmsOutPage() {
             true
           }
 
-          pagination={false}
+          suppressRowClickSelection={
+            false
+          }
         />
       </div>
 
-      {/* ======================================================
-          下部
-      ====================================================== */}
+      {/* 下部 */}
 
       <div
         style={{
@@ -1677,7 +1588,7 @@ export default function WmsOutPage() {
         }}
       >
         {loading
-          ? '読み込み中'
+          ? '読み込み中...'
           : `${rows.length} 件`}
       </div>
     </main>
@@ -1685,7 +1596,7 @@ export default function WmsOutPage() {
 }
 
 // ============================================================
-// BUTTON STYLE
+// Style
 // ============================================================
 
 const topButtonStyle:
@@ -1718,4 +1629,27 @@ const searchButtonStyle:
   height: 27,
 
   padding: '0 15px',
+};
+
+const gridButtonStyle:
+  React.CSSProperties = {
+  height: 23,
+
+  padding: '0 8px',
+
+  border:
+    '1px solid #24508f',
+
+  borderRadius: 4,
+
+  backgroundColor:
+    '#4472c4',
+
+  color: '#fff',
+
+  cursor: 'pointer',
+
+  fontSize: 11,
+
+  lineHeight: '21px',
 };
