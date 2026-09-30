@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createClient } from '../../../lib/supabaseclient';
+import { createClient } from '../../../lib/supabaseClient';
 
 type Detail = {
   id: number;
