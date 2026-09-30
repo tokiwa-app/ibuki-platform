@@ -11,6 +11,13 @@ export interface Transaction {
   delivery_destination_id: number | null;
   payment_destination_id: number | null;
 
+  // Viewでpartnersから取得
+  billing_partner_name: string | null;
+  billing_partner_short_name: string | null;
+
+  payment_partner_name: string | null;
+  payment_partner_short_name: string | null;
+
   delivery_date: string | null;
   delivery_time: string | null;
 
@@ -61,6 +68,13 @@ export interface GridRow {
   billing_id: number | null;
   delivery_destination_id: number | null;
   payment_destination_id: number | null;
+
+  // 取引先表示用
+  billing_partner_name: string | null;
+  billing_partner_short_name: string | null;
+
+  payment_partner_name: string | null;
+  payment_partner_short_name: string | null;
 
   project_name: string | null;
   item_name: string | null;
